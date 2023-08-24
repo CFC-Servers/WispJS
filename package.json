@@ -1,0 +1,27 @@
+{
+  "name": "wispjs",
+  "version": "1.0.0",
+  "description": "A package for interacting with Wisp-based server panels",
+  "main": "index.js",
+  "scripts": {
+    "start": "tsc && node dist/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CFC-Servers/wispjs.git"
+  },
+  "author": "",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/CFC-Servers/wispjs/issues"
+  },
+  "homepage": "https://github.com/CFC-Servers/wispjs#readme",
+  "dependencies": {
+    "axios": "^1.4.0",
+    "socket.io-client": "^4.7.2",
+    "typescript": "^5.1.6"
+  },
+  "devDependencies": {
+    "@types/node": "^20.5.4"
+  }
+}
