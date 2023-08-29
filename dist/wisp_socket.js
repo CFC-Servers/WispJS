@@ -114,7 +114,10 @@ class WispSocket {
             });
             this.socket.once("git-success", (commit) => {
                 this.logger.info(`Addon updated to ${commit}`);
-                finished(true, commit);
+                if (!commit) {
+                    this.logger.info("No commit given!");
+                }
+                finished(true, commit || "");
             });
             this.socket.on("git-error", (message) => {
                 if (message === "Remote authentication required but no callback set") {

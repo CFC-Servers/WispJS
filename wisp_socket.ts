@@ -22,7 +22,7 @@ interface GitPullData {
 }
 
 export interface GitPullResult {
-  output: string | undefined;
+  output: string;
   isPrivate: boolean;
 }
 
@@ -168,7 +168,7 @@ export class WispSocket {
     return new Promise<GitPullResult>((resolve, reject) => {
       let isPrivate = false;
 
-      const finished = (success: boolean, output: string | undefined) => {
+      const finished = (success: boolean, output: string) => {
         this.socket.removeAllListeners("git-pull");
         this.socket.removeAllListeners("git-error");
         this.socket.removeAllListeners("git-success");
@@ -202,7 +202,12 @@ export class WispSocket {
 
       this.socket.once("git-success", (commit) => {
         this.logger.info(`Addon updated to ${commit}`);
-        finished(true, commit);
+
+        if (!commit) {
+          this.logger.info("No commit given!");
+        }
+
+        finished(true, commit || "");
       });
 
       this.socket.on("git-error", (message) => {

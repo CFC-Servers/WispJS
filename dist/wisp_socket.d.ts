@@ -17,7 +17,7 @@ interface GitPullData {
     authkey?: string;
 }
 export interface GitPullResult {
-    output: string | undefined;
+    output: string;
     isPrivate: boolean;
 }
 interface FilesearchFile {
