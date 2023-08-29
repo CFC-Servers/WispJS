@@ -165,7 +165,7 @@ export class WispSocket {
   }
 
   gitPull(dir: string) {
-    return new Promise<GitPullResult | undefined>((resolve, reject) => {
+    return new Promise<GitPullResult>((resolve, reject) => {
       let isPrivate = false;
 
       const finished = (success: boolean, output: string | undefined) => {
@@ -220,7 +220,7 @@ export class WispSocket {
   }
 
   gitClone(url: string, dir: string, branch: string) {
-    return new Promise<GitCloneResult | undefined>((resolve, reject) => {
+    return new Promise<GitCloneResult>((resolve, reject) => {
       let isPrivate = false;
 
       const finished = (success: boolean) => {
