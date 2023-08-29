@@ -1,4 +1,4 @@
-const winston = require("winston");
+import * as winston from "winston";
 import { WispAPI } from "./wisp_api";
 import { WispSocket } from "./wisp_socket";
 
@@ -19,10 +19,11 @@ export class WispInterface {
     this.api = new WispAPI(domain, uuid, token, this.logger);
   }
 
-  async connect() {
+  async connect(ghPAT: string) {
     const websocketInfo = await this.api.getWebsocketDetails();
     this.logger.info(`Connecting to websocket at ${websocketInfo.url} - ${websocketInfo.token}`);
-    this.socket = new WispSocket(this.logger);
-    await this.socket.connect(websocketInfo.url, websocketInfo.token);
+
+    this.socket = new WispSocket(this.logger, websocketInfo.url, websocketInfo.token, ghPAT);
+    await this.socket.connect();
   }
 }

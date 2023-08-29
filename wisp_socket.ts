@@ -1,4 +1,4 @@
-import { io, Socket } from "socket.io-client";
+import { io, Manager, Socket } from "socket.io-client";
 
 interface ConsoleMessage {
   type: string;
@@ -57,42 +57,91 @@ interface ClientToServerEvents {
 
 export interface WispSocket {
   socket: Socket<ServerToClientEvents, ClientToServerEvents>;
-  logger: any
-  ghToken?: string;
+  logger: any;
+  url: string;
+  token: string;
+  ghToken: string;
+  manager: Manager;
 }
 
 // TODO: Handle errors better
+// TODO: Allow for no ghToken
+// TODO: Don't require a logger
 export class WispSocket {
-  constructor(logger: any, ghPAT: string) {
+  constructor(logger: any, url: string, token: string, ghToken: string) {
     this.logger = logger;
+    this.url = url;
+    this.token = token;
+    this.ghToken = ghToken;
   }
-    
-  connect(url: string, token: string, ghPAT: string) {
+
+  connect() {
     return new Promise<void>((resolve, reject) => {
-      this.socket = io(url, {
+      let connectedFirst = false;
+
+      this.manager = new Manager(this.url, {
+        addTrailingSlash: false,
+        autoConnect: true,
+        reconnection: true,
+        reconnectionAttempts: 50,
+        reconnectionDelay: 250,
+        timeout: 5000,
         extraHeaders: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${this.token}`
         }
       });
 
-      this.socket.on("connect", () => {
+      const socket = this.manager.socket("/");
+      socket.on("connect", () => {
         this.logger.info("Connected to WebSocket");
-        this.socket.emit("auth", token);
+        socket.emit("auth", this.token);
       });
 
-      this.socket.on("disconnect", () => {
-        this.logger.info("Disconnected from WebSocket");
+      socket.on("error", (reason) => {
+        this.logger.error(`WebSocket error: ${reason}`);
       });
 
-      this.socket.on("error", (error) => {
-        this.logger.error(`WebSocket error: ${error}`);
+      socket.on("connect_error", (error) => {
+        this.logger.error(`WebSocket Connect error: ${error}`);
         reject();
       });
 
-      this.socket.on("auth_success", () => {
-        this.logger.info("Auth success");
-        resolve();
+      socket.on("disconnect", (reason) => {
+        this.logger.error(`Disconnected from WebSocket: ${reason}`);
+
+        if (reason === "io server disconnect") {
+          this.logger.error("Server closed connection - retrying");
+        }
       });
+
+      socket.on("reconnect", (attempts) => {
+        this.logger.error(`WebSocket succesfully reconnected. Attempts: ${attempts}`);
+      });
+
+      socket.on("reconnect_error", (error) => {
+        this.logger.error(`WebSocket failed to reconnect: ${error}`);
+      });
+
+      socket.on("reconnect_failed", () => {
+        this.logger.error(`WebSocket failed to reconnect after max attempts`);
+      });
+
+      socket.on("auth_success", () => {
+        this.logger.info("Auth success");
+
+        if (!connectedFirst) {
+          connectedFirst = true;
+          resolve();
+        }
+      });
+
+      this.socket = socket;
+
+      setTimeout(() => {
+        if (!connectedFirst) {
+          reject();
+        }
+      }, 5000);
     });
   }
 

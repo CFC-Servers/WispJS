@@ -4,7 +4,8 @@
   "description": "A package for interacting with Wisp-based server panels",
   "main": "index.js",
   "scripts": {
-    "start": "tsc && node dist/index.js"
+    "start": "tsc && node dist/index.js",
+    "prepack": "tsc"
   },
   "repository": {
     "type": "git",
@@ -19,7 +20,8 @@
   "dependencies": {
     "axios": "^1.4.0",
     "socket.io-client": "^4.7.2",
-    "typescript": "^5.1.6"
+    "typescript": "^5.1.6",
+    "winston": "^3.10.0"
   },
   "devDependencies": {
     "@types/node": "^20.5.4"
