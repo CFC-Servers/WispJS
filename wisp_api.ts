@@ -13,6 +13,8 @@ export interface WispAPI {
   logger: any;
 }
 
+export type PowerRequest = "start" | "stop" | "restart" | "kill";
+
 export class WispAPI {
   constructor(domain: string, uuid: string, token: string, logger: any) {
     this.domain = domain;
@@ -76,6 +78,10 @@ export class WispAPI {
 
   async getResources() {
     return await this.makeRequest("GET", "resources");
+  }
+
+  async powerRequest(action: PowerRequest) {
+    return await this.makeRequest("POST", "power", { signal: action });
   }
 
   // Filesystem
