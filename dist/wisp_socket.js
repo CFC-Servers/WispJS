@@ -19,7 +19,7 @@ export class WispSocket {
                 extraHeaders: {
                     "Authorization": `Bearer ${this.token}`
                 },
-                addTrailingSlash: false
+                addTrailingSlash: true
             });
             this.socket.on("connect", () => {
                 console.log("Connected to WebSocket");
