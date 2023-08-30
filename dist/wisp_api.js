@@ -1,7 +1,19 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.WispAPI = void 0;
-const axios_1 = require("axios");
+const axios_1 = __importDefault(require("axios"));
 class WispAPI {
     constructor(domain, uuid, token, logger) {
         this.domain = domain;
@@ -12,83 +24,109 @@ class WispAPI {
     makeURL(path) {
         return `${this.domain}/api/client/servers/${this.uuid}/${path}`;
     }
-    async makeRequest(method, path, data) {
-        const url = this.makeURL(path);
-        const headers = {
-            "Content-Type": "application/json",
-            "Accept": "application/vnd.wisp.v1+json",
-            "Authorization": `Bearer ${this.token}`
-        };
-        const request = async () => {
-            let response;
-            const requestData = { headers: headers };
-            if (method == "GET") {
-                if (data !== null) {
-                    requestData.params = data;
+    makeRequest(method, path, data) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const url = this.makeURL(path);
+            const headers = {
+                "Content-Type": "application/json",
+                "Accept": "application/vnd.wisp.v1+json",
+                "Authorization": `Bearer ${this.token}`
+            };
+            const request = () => __awaiter(this, void 0, void 0, function* () {
+                let response;
+                const requestData = { headers: headers };
+                if (method == "GET") {
+                    if (data !== null) {
+                        requestData.params = data;
+                    }
+                    response = yield axios_1.default.get(url, requestData);
                 }
-                response = await axios_1.default.get(url, requestData);
-            }
-            else if (method == "POST") {
-                response = await axios_1.default.post(url, data, requestData);
-            }
-            else if (method == "DELETE") {
-                response = await axios_1.default.delete(url, requestData);
-            }
-            else if (method == "PUT") {
-                response = await axios_1.default.put(url, data, requestData);
-            }
-            else {
-                throw new Error(`Invalid method: ${method}`);
-            }
-            return response;
-        };
-        this.logger.info(`Sending ${method} request to ${url}`);
-        return await request();
+                else if (method == "POST") {
+                    response = yield axios_1.default.post(url, data, requestData);
+                }
+                else if (method == "DELETE") {
+                    response = yield axios_1.default.delete(url, requestData);
+                }
+                else if (method == "PUT") {
+                    response = yield axios_1.default.put(url, data, requestData);
+                }
+                else {
+                    throw new Error(`Invalid method: ${method}`);
+                }
+                return response;
+            });
+            this.logger.info(`Sending ${method} request to ${url}`);
+            return yield request();
+        });
     }
     // Meta
-    async sendCommand(command) {
-        return await this.makeRequest("POST", "command", { command: command });
+    sendCommand(command) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.makeRequest("POST", "command", { command: command });
+        });
     }
-    async getWebsocketDetails() {
-        const response = await this.makeRequest("GET", "websocket");
-        return response.data;
+    getWebsocketDetails() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const response = yield this.makeRequest("GET", "websocket");
+            return response.data;
+        });
     }
-    async getServerDetails() {
-        return await this.makeRequest("GET", "");
+    getServerDetails() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.makeRequest("GET", "");
+        });
     }
-    async getResources() {
-        return await this.makeRequest("GET", "resources");
+    getResources() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.makeRequest("GET", "resources");
+        });
     }
-    async powerRequest(action) {
-        return await this.makeRequest("POST", "power", { signal: action });
+    powerRequest(action) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.makeRequest("POST", "power", { signal: action });
+        });
     }
     // Filesystem
     // TODO: Handle pagination
-    async getDirectoryContents(path) {
-        const response = await this.makeRequest("GET", "files/directory", { path: path });
-        return response.data;
+    getDirectoryContents(path) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const response = yield this.makeRequest("GET", "files/directory", { path: path });
+            return response.data;
+        });
     }
-    async createDirectory(path) {
-        return await this.makeRequest("POST", "files/directory", { path: path });
+    createDirectory(path) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.makeRequest("POST", "files/directory", { path: path });
+        });
     }
-    async readFile(path) {
-        const response = await this.makeRequest("GET", "files/read", { path: path });
-        return response.data.content;
+    readFile(path) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const response = yield this.makeRequest("GET", "files/read", { path: path });
+            return response.data.content;
+        });
     }
-    async writeFile(path, content) {
-        const data = { path: path, content: content };
-        return await this.makeRequest("POST", "files/write", data);
+    writeFile(path, content) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const data = { path: path, content: content };
+            return yield this.makeRequest("POST", "files/write", data);
+        });
     }
-    async deleteFiles(paths) {
-        return await this.makeRequest("POST", "files/delete", { paths: paths });
+    deleteFiles(paths) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.makeRequest("POST", "files/delete", { paths: paths });
+        });
     }
-    async renameFile(path, newPath) {
-        const data = { path: path, to: newPath };
-        return await this.makeRequest("PUT", "files/rename", data);
+    renameFile(path, newPath) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const data = { path: path, to: newPath };
+            return yield this.makeRequest("PUT", "files/rename", data);
+        });
     }
     // FastDL
-    async syncFastDL() {
-        await this.makeRequest("POST", "fastdl");
+    syncFastDL() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.makeRequest("POST", "fastdl");
+        });
     }
 }
 exports.WispAPI = WispAPI;
