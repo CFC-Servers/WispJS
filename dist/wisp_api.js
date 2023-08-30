@@ -49,8 +49,8 @@ export class WispAPI {
     // Meta
     async sendCommand(command) {
         try {
-            await this.makeRequest("POST", "command", { command: command });
-            return true;
+            const response = await this.makeRequest("POST", "command", { command: command });
+            return response.ok;
         }
         catch (error) {
             this.logger.error(`Failed to send command: ${error}`);
