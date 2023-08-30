@@ -144,7 +144,7 @@ export class WispSocket {
           this.logger.error("Socket didn't connect in time");
           reject();
         }
-      }, 5000);
+      }, 15000);
 
       socket.connect();
       this.logger.info("Sent socket.connect()");
@@ -166,7 +166,7 @@ export class WispSocket {
         if (!done) {
           reject();
         }
-      }, 5000);
+      }, 10000);
     });
   }
 
