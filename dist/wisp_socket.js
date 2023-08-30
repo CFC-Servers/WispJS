@@ -15,7 +15,7 @@ export class WispSocket {
             this.logger.info("Connecting to WebSocket", this.url, this.token);
             this.socket = io(this.url, {
                 forceNew: true,
-                transports: ["websocket", "webtransport", "polling"],
+                transports: ["polling", "websocket", "webtransport"],
                 extraHeaders: {
                     "Authorization": `Bearer ${this.token}`
                 },

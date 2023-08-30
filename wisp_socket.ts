@@ -81,7 +81,7 @@ export class WispSocket {
 
       this.socket = io(this.url, {
         forceNew: true,
-        transports: ["websocket", "webtransport", "polling"],
+        transports: ["polling", "websocket", "webtransport"],
         extraHeaders: {
           "Authorization": `Bearer ${this.token}`
         },
