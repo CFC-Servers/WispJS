@@ -13,66 +13,51 @@ export class WispSocket {
         return new Promise((resolve, reject) => {
             let connectedFirst = false;
             this.logger.info("Connecting to WebSocket", this.url, this.token);
-            const socket = io(this.url, {
+            this.socket = io(this.url, {
                 transports: ["websocket"],
-                reconnection: true,
-                reconnectionAttempts: 50,
-                reconnectionDelay: 250,
-                autoConnect: false,
                 extraHeaders: {
                     "Authorization": `Bearer ${this.token}`
                 },
                 addTrailingSlash: false
             });
-            socket.on("connect", () => {
+            this.socket.on("connect", () => {
                 console.log("Connected to WebSocket");
-                socket.emit("auth", this.token);
+                this.socket.emit("auth", this.token);
             });
-            socket.on("error", (reason) => {
+            this.socket.on("error", (reason) => {
                 console.error(`WebSocket error: ${reason}`);
             });
-            socket.on("connect_error", (error) => {
+            this.socket.on("connect_error", (error) => {
                 console.error(`WebSocket Connect error: ${error}`);
                 if (!connectedFirst) {
                     connectedFirst = true;
                     reject();
                 }
             });
-            socket.on("disconnect", (reason) => {
+            this.socket.on("disconnect", (reason) => {
                 console.error(`Disconnected from WebSocket: ${reason}`);
                 if (reason === "io server disconnect") {
                     console.error("Server closed connection - retrying");
-                    socket.connect();
+                    this.socket.connect();
                 }
             });
-            socket.on("reconnect", (attempts) => {
-                console.error(`WebSocket succesfully reconnected. Attempts: ${attempts}`);
-            });
-            socket.on("reconnect_error", (error) => {
-                console.error(`WebSocket failed to reconnect: ${error}`);
-            });
-            socket.on("reconnect_failed", () => {
-                console.error(`WebSocket failed to reconnect after max attempts`);
-            });
-            socket.on("auth_success", () => {
+            this.socket.on("auth_success", () => {
                 console.info("Auth success");
                 if (!connectedFirst) {
                     connectedFirst = true;
                     resolve();
                 }
             });
-            socket.onAny((event, ...args) => {
+            this.socket.onAny((event, ...args) => {
                 let message = `Received event: ${event}`;
                 console.info(message, JSON.stringify(args));
             });
-            this.socket = socket;
             setTimeout(() => {
                 if (!connectedFirst) {
                     console.error("Socket didn't connect in time");
                     reject();
                 }
             }, 5000);
-            socket.connect();
             console.info("Sent socket.connect()");
         });
     }
