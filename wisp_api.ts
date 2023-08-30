@@ -22,7 +22,7 @@ export class WispAPI {
   }
 
   async makeRequest(method: RequestTypes, path: string, data?: any) {
-    const url = this.makeURL(path);
+    let url = this.makeURL(path);
     const headers = new Headers({
       "Content-Type": "application/json",
       "Accept": "application/vnd.wisp.v1+json",
@@ -33,18 +33,16 @@ export class WispAPI {
       let response;
 
       if (method == "GET") {
-        let requestBody;
         if (data !== null) {
-          // generate a new URLSearchParams with data
           const params = new URLSearchParams();
           for (const key in data) {
             params.append(key, data[key]);
           }
 
-          requestBody = params;
+          url = url + params
         }
 
-        response = await fetch(url, { method: "GET", headers: headers, body: requestBody });
+        response = await fetch(url, { method: "GET", headers: headers });
       } else if (method == "POST") {
         response = await fetch(url, { method: "POST", headers: headers, body: data });
       } else if (method == "DELETE") {
