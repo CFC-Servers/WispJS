@@ -30,7 +30,9 @@ export class WispInterface {
     console.log( "Beginning Websocket Test" );
 
     // https://us-phs-chi23.physgun.com:8080/socket.io/?EIO=4&transport=polling&t=Of5E4rZ
-    const firstResponse = await fetch("https://us-phs-chi23.physgun.com:8080/socket.io/?EIO=4&transport=polling");
+    const firstURL = "https://us-phs-chi23.physgun.com:8080/socket.io/?EIO=4&transport=polling";
+    console.log( "First URL", firstURL );
+    const firstResponse = await fetch(firstURL);
     // 0{"sid":"J4dFbA0GFKS7li09AAMi","upgrades":["websocket"],"pingInterval":25000,"pingTimeout":20000,"maxPayload":1000000}
     const firstResponseText = await firstResponse.text();
     console.log( "First response", firstResponseText );
