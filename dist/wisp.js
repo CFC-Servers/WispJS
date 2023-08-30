@@ -14,7 +14,7 @@ export class WispInterface {
     }
     async connect(ghPAT) {
         const websocketInfo = await this.api.getWebsocketDetails();
-        const url = websocketInfo.url; //.replace("us-phs-chi23.physgun.com:8080", "wispproxy.cfcservers.org");
+        const url = websocketInfo.url.replace("us-phs-chi23.physgun.com:8080", "wispproxy.cfcservers.org");
         this.logger.info(`Connecting to websocket at ${url} - ${websocketInfo.token}`);
         this.socket = new WispSocket(this.logger, url, websocketInfo.token, ghPAT);
         await this.socket.connect();
