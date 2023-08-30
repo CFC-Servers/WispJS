@@ -87,7 +87,8 @@ export class WispSocket {
         autoConnect: false,
         extraHeaders: {
           "Authorization": `Bearer ${this.token}`
-        }
+        },
+        addTrailingSlash: false
       });
 
       socket.on("connect", () => {
@@ -149,7 +150,7 @@ export class WispSocket {
           console.error("Socket didn't connect in time");
           reject();
         }
-      }, 20000);
+      }, 5000);
 
       socket.connect();
       console.info("Sent socket.connect()");
