@@ -1,5 +1,8 @@
-import axios from "axios";
-export class WispAPI {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.WispAPI = void 0;
+const axios_1 = require("axios");
+class WispAPI {
     constructor(domain, uuid, token, logger) {
         this.domain = domain;
         this.uuid = uuid;
@@ -23,16 +26,16 @@ export class WispAPI {
                 if (data !== null) {
                     requestData.params = data;
                 }
-                response = await axios.get(url, requestData);
+                response = await axios_1.default.get(url, requestData);
             }
             else if (method == "POST") {
-                response = await axios.post(url, data, requestData);
+                response = await axios_1.default.post(url, data, requestData);
             }
             else if (method == "DELETE") {
-                response = await axios.delete(url, requestData);
+                response = await axios_1.default.delete(url, requestData);
             }
             else if (method == "PUT") {
-                response = await axios.put(url, data, requestData);
+                response = await axios_1.default.put(url, data, requestData);
             }
             else {
                 throw new Error(`Invalid method: ${method}`);
@@ -88,3 +91,4 @@ export class WispAPI {
         await this.makeRequest("POST", "fastdl");
     }
 }
+exports.WispAPI = WispAPI;
