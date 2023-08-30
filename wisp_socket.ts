@@ -77,7 +77,7 @@ export class WispSocket {
   connect() {
     return new Promise<void>((resolve, reject) => {
       let connectedFirst = false;
-      this.logger.info("Connecting to WebSocket", this.url, this.token);
+      console.log("Connecting to WebSocket", this.url, this.token);
 
       this.socket = io(this.url, {
         forceNew: true,
