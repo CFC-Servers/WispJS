@@ -16,10 +16,22 @@ export class WispInterface {
         const websocketInfo = await this.api.getWebsocketDetails();
         this.logger.info(`Connecting to websocket at ${websocketInfo.url} - ${websocketInfo.token}`);
         console.log("Beginning Websocket Test");
-        // https://us-phs-chi23.physgun.com:8080/socket.io/?EIO=4&transport=polling&t=Of5E4rZ
         const firstURL = "https://us-phs-chi23.physgun.com:8080/socket.io/?EIO=4&transport=polling";
         console.log("First URL", firstURL);
-        const firstResponse = await fetch(firstURL);
+        const firstResponse = await fetch("https://us-phs-chi23.physgun.com:8080/socket.io/?EIO=4&transport=polling", {
+            "credentials": "include",
+            "headers": {
+                "Upgrade-Insecure-Requests": "1",
+                "Sec-Fetch-Dest": "document",
+                "Sec-Fetch-Mode": "navigate",
+                "Sec-Fetch-Site": "none",
+                "Sec-Fetch-User": "?1",
+                "Pragma": "no-cache",
+                "Cache-Control": "no-cache"
+            },
+            "method": "GET",
+            "mode": "cors"
+        });
         // 0{"sid":"J4dFbA0GFKS7li09AAMi","upgrades":["websocket"],"pingInterval":25000,"pingTimeout":20000,"maxPayload":1000000}
         const firstResponseText = await firstResponse.text();
         console.log("First response", firstResponseText, firstResponse.status, firstResponse.statusText);
