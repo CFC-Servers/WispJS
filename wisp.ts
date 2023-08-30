@@ -35,7 +35,7 @@ export class WispInterface {
     const firstResponse = await fetch(firstURL);
     // 0{"sid":"J4dFbA0GFKS7li09AAMi","upgrades":["websocket"],"pingInterval":25000,"pingTimeout":20000,"maxPayload":1000000}
     const firstResponseText = await firstResponse.text();
-    console.log( "First response", firstResponseText );
+    console.log( "First response", firstResponseText, firstResponse.status, firstResponse.statusText);
     const body = firstResponseText.substring( 1 );
     const bodyJSON = JSON.parse( body );
     const sid = bodyJSON.sid;
