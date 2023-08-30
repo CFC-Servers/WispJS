@@ -10,7 +10,7 @@ export declare class WispAPI {
     constructor(domain: string, uuid: string, token: string, logger: any);
     makeURL(path: string): string;
     makeRequest(method: RequestTypes, path: string, data?: any): Promise<import("axios").AxiosResponse<any, any>>;
-    sendCommand(command: string): Promise<import("axios").AxiosResponse<any, any>>;
+    sendCommand(command: string): Promise<boolean>;
     getWebsocketDetails(): Promise<any>;
     getServerDetails(): Promise<import("axios").AxiosResponse<any, any>>;
     getResources(): Promise<import("axios").AxiosResponse<any, any>>;

@@ -64,7 +64,14 @@ export class WispAPI {
 
   // Meta
   async sendCommand(command: string) {
-    return await this.makeRequest("POST", "command", { command: command });
+    try {
+      await this.makeRequest("POST", "command", { command: command });
+      return true
+    }
+    catch (error) {
+      this.logger.error(`Failed to send command: ${error}`);
+      return false
+    }
   }
 
   async getWebsocketDetails() {
