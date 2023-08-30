@@ -80,7 +80,8 @@ export class WispSocket {
       this.logger.info("Connecting to WebSocket", this.url, this.token);
 
       this.socket = io(this.url, {
-        transports: ["websocket"],
+        forceNew: true,
+        transports: ["websocket", "webtransport", "polling"],
         extraHeaders: {
           "Authorization": `Bearer ${this.token}`
         },
@@ -97,7 +98,7 @@ export class WispSocket {
       });
 
       this.socket.on("connect_error", (error) => {
-        console.error(`WebSocket Connect error: ${error}`);
+        console.error(`WebSocket Connect error: ${error.toString()}`);
         if (!connectedFirst) {
           connectedFirst = true;
           reject();
@@ -114,7 +115,7 @@ export class WispSocket {
       });
 
       this.socket.on("auth_success", () => {
-        console.info("Auth success");
+        console.log("Auth success");
 
         if (!connectedFirst) {
           connectedFirst = true;
@@ -124,7 +125,7 @@ export class WispSocket {
 
       this.socket.onAny((event, ...args) => {
         let message = `Received event: ${event}`;
-        console.info(message, JSON.stringify(args));
+        console.log(message, JSON.stringify(args));
       });
 
       setTimeout(() => {
@@ -134,7 +135,7 @@ export class WispSocket {
         }
       }, 5000);
 
-      console.info("Sent socket.connect()");
+      console.log("Sent socket.connect()");
     });
   }
 
