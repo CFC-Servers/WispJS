@@ -84,9 +84,10 @@ export class WispSocket {
         reconnection: true,
         reconnectionAttempts: 50,
         reconnectionDelay: 250,
-        reconnectionDelayMax: 5000,
-        randomizationFactor: 0.5,
-        autoConnect: false
+        autoConnect: false,
+        extraHeaders: {
+          "Authorization": `Bearer ${this.token}`
+        }
       });
 
       socket.on("connect", () => {
