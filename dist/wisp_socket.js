@@ -1,11 +1,8 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.WispSocket = void 0;
-const socket_io_client_1 = require("socket.io-client");
+import { Manager } from "socket.io-client";
 // TODO: Handle errors better
 // TODO: Allow for no ghToken
 // TODO: Don't require a logger
-class WispSocket {
+export class WispSocket {
     constructor(logger, url, token, ghToken) {
         this.logger = logger;
         this.url = url;
@@ -15,7 +12,7 @@ class WispSocket {
     connect() {
         return new Promise((resolve, reject) => {
             let connectedFirst = false;
-            this.manager = new socket_io_client_1.Manager(this.url, {
+            this.manager = new Manager(this.url, {
                 addTrailingSlash: false,
                 autoConnect: true,
                 reconnection: true,
@@ -183,4 +180,3 @@ class WispSocket {
         });
     }
 }
-exports.WispSocket = WispSocket;
