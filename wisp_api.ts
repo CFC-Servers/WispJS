@@ -76,6 +76,7 @@ export class WispAPI {
 
   async getWebsocketDetails() {
     const response = await this.makeRequest("GET", "websocket");
+    console.log("Got websocket details response", response);
     return await response.json();
   }
 

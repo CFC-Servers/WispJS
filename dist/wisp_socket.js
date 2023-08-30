@@ -12,6 +12,7 @@ export class WispSocket {
     connect() {
         return new Promise((resolve, reject) => {
             let connectedFirst = false;
+            this.logger.info("Connecting to WebSocket", this.url, this.token);
             const socket = io(this.url, {
                 transports: ["websocket"],
                 reconnection: true,
