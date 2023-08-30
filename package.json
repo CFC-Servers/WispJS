@@ -6,8 +6,8 @@
   "main": "dist/wisp.js",
   "types": "dist/wisp.d.ts",
   "scripts": {
-      "test": "tsc && node dist/test.js",
-      "test-debug": "tsc && DEBUG=* node dist/test.js"
+    "test": "tsc && node dist/test.js",
+    "test-debug": "tsc && DEBUG=* node dist/test.js"
   },
   "repository": {
     "type": "git",
@@ -22,8 +22,7 @@
   "dependencies": {
     "axios": "^1.4.0",
     "socket.io-client": "^4.7.2",
-    "typescript": "^5.1.6",
-    "winston": "^3.10.0"
+    "typescript": "^5.1.6"
   },
   "devDependencies": {
     "@types/node": "^20.5.4"

@@ -1,12 +1,15 @@
-import { createLogger, format, transports } from "winston";
 import { WispAPI } from "./wisp_api.js";
 import { WispSocket } from "./wisp_socket.js";
 export class WispInterface {
     constructor(domain, uuid, token) {
-        this.logger = createLogger({
-            format: format.simple(),
-            transports: [new transports.Console()]
-        });
+        this.logger = {
+            info: (msg) => {
+                console.log(msg);
+            },
+            error: (msg) => {
+                console.error(msg);
+            }
+        };
         this.api = new WispAPI(domain, uuid, token, this.logger);
     }
     async connect(ghPAT) {

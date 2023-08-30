@@ -1,5 +1,3 @@
-import { createLogger, format, transports } from "winston";
-
 import { WispAPI } from "./wisp_api.js";
 import { WispSocket } from "./wisp_socket.js";
 
@@ -13,10 +11,14 @@ export interface WispInterface {
 
 export class WispInterface {
   constructor(domain: string, uuid: string, token: string) {
-    this.logger = createLogger({
-      format: format.simple(),
-      transports: [new transports.Console()]
-    });
+    this.logger = {
+      info: (msg: string) => {
+        console.log(msg);
+      },
+      error: (msg: string) => {
+        console.error(msg);
+      }
+    };
 
     this.api = new WispAPI(domain, uuid, token, this.logger);
   }
