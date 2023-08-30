@@ -6,7 +6,7 @@ export class WispAPI {
         this.logger = logger;
     }
     makeURL(path) {
-        return `${this.domain}/api/client/servers/${this.uuid}/${path}`;
+        return `https://${this.domain}/api/client/servers/${this.uuid}/${path}`;
     }
     async makeRequest(method, path, data) {
         const url = this.makeURL(path);

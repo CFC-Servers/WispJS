@@ -18,7 +18,7 @@ export class WispAPI {
   }
 
   makeURL(path: string) {
-    return `${this.domain}/api/client/servers/${this.uuid}/${path}`;
+    return `https://${this.domain}/api/client/servers/${this.uuid}/${path}`;
   }
 
   async makeRequest(method: RequestTypes, path: string, data?: any) {
