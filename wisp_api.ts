@@ -28,18 +28,19 @@ export class WispAPI {
       "Accept": "application/vnd.wisp.v1+json",
       "Authorization": `Bearer ${this.token}`
     });
+    console.log("Headers", headers);
 
     const request = async () => {
       let response;
 
       if (method == "GET") {
         if (data !== null) {
-          const params = new URLSearchParams();
-          for (const key in data) {
-            params.append(key, data[key]);
-          }
+          const params = new URLSearchParams(data);
+          const uri = new URL(url);
 
-          url = url + params
+          uri.search = params.toString();
+          url = uri.toString();
+
           this.logger.info(`Sending (updated) GET request to ${url}`);
         }
 
