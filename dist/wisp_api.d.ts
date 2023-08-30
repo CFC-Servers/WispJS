@@ -9,18 +9,18 @@ export type PowerRequest = "start" | "stop" | "restart" | "kill";
 export declare class WispAPI {
     constructor(domain: string, uuid: string, token: string, logger: any);
     makeURL(path: string): string;
-    makeRequest(method: RequestTypes, path: string, data?: any): Promise<import("axios").AxiosResponse<any, any>>;
+    makeRequest(method: RequestTypes, path: string, data?: any): Promise<Response>;
     sendCommand(command: string): Promise<boolean>;
     getWebsocketDetails(): Promise<any>;
-    getServerDetails(): Promise<import("axios").AxiosResponse<any, any>>;
-    getResources(): Promise<import("axios").AxiosResponse<any, any>>;
-    powerRequest(action: PowerRequest): Promise<import("axios").AxiosResponse<any, any>>;
+    getServerDetails(): Promise<Response>;
+    getResources(): Promise<Response>;
+    powerRequest(action: PowerRequest): Promise<Response>;
     getDirectoryContents(path: string): Promise<any>;
-    createDirectory(path: string): Promise<import("axios").AxiosResponse<any, any>>;
+    createDirectory(path: string): Promise<Response>;
     readFile(path: string): Promise<any>;
-    writeFile(path: string, content: string): Promise<import("axios").AxiosResponse<any, any>>;
-    deleteFiles(paths: string[]): Promise<import("axios").AxiosResponse<any, any>>;
-    renameFile(path: string, newPath: string): Promise<import("axios").AxiosResponse<any, any>>;
+    writeFile(path: string, content: string): Promise<Response>;
+    deleteFiles(paths: string[]): Promise<Response>;
+    renameFile(path: string, newPath: string): Promise<Response>;
     syncFastDL(): Promise<void>;
 }
 export {};

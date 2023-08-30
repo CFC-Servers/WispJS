@@ -1,10 +1,4 @@
-import axios from "axios";
-
 type RequestTypes = "GET" | "POST" | "PUT" | "DELETE";
-interface RequestData {
-  headers: {[key: string]: string};
-  params?: {[key: string]: any};
-}
 
 export interface WispAPI {
   domain: string;
@@ -29,33 +23,34 @@ export class WispAPI {
 
   async makeRequest(method: RequestTypes, path: string, data?: any) {
     const url = this.makeURL(path);
-    const headers = {
+    const headers = new Headers({
       "Content-Type": "application/json",
       "Accept": "application/vnd.wisp.v1+json",
       "Authorization": `Bearer ${this.token}`
-    };
+    });
 
     const request = async () => {
       let response;
-      const requestData: RequestData = { headers: headers }
-
-      const instance = axios.create({
-        timeout: 3000,
-        adapter: ["http"]
-      });
 
       if (method == "GET") {
+        let requestBody;
         if (data !== null) {
-          requestData.params = data;
+          // generate a new URLSearchParams with data
+          const params = new URLSearchParams();
+          for (const key in data) {
+            params.append(key, data[key]);
+          }
+
+          requestBody = params;
         }
 
-        response = await instance.get(url, requestData);
+        response = await fetch(url, { method: "GET", headers: headers, body: requestBody });
       } else if (method == "POST") {
-        response = await instance.post(url, data, requestData);
+        response = await fetch(url, { method: "POST", headers: headers, body: data });
       } else if (method == "DELETE") {
-        response = await instance.delete(url, requestData);
+        response = await fetch(url, { method: "DELETE", headers: headers });
       } else if (method == "PUT") {
-        response = await instance.put(url, data, requestData);
+        response = await fetch(url, { method: "PUT", headers: headers, body: data });
       } else {
         throw new Error(`Invalid method: ${method}`);
       }
@@ -81,7 +76,7 @@ export class WispAPI {
 
   async getWebsocketDetails() {
     const response = await this.makeRequest("GET", "websocket");
-    return response.data;
+    return await response.json();
   }
 
   async getServerDetails() {
@@ -100,7 +95,7 @@ export class WispAPI {
   // TODO: Handle pagination
   async getDirectoryContents(path: string) {
     const response = await this.makeRequest("GET", "files/directory", { path: path });
-    return response.data;
+    return await response.json();
   }
 
   async createDirectory(path: string) {
@@ -109,7 +104,9 @@ export class WispAPI {
 
   async readFile(path: string) {
     const response = await this.makeRequest("GET", "files/read", { path: path });
-    return response.data.content;
+    const responseData = await response.json();
+
+    return responseData.content;
   }
 
   async writeFile(path: string, content: string) {
