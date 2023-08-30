@@ -54,6 +54,8 @@ export class WispSocket {
                 console.log(message, JSON.stringify(args));
             });
             setTimeout(() => {
+                console.error(`Connected: ${this.socket?.connected}`);
+                console.error(`Transport: ${this.socket?.io?.engine?.transport?.name}`);
                 if (!connectedFirst) {
                     console.error("Socket didn't connect in time");
                     reject();
