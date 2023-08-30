@@ -19,20 +19,24 @@ export class WispAPI {
         const request = async () => {
             let response;
             const requestData = { headers: headers };
+            const instance = axios.create({
+                timeout: 3000,
+                adapter: ["http"]
+            });
             if (method == "GET") {
                 if (data !== null) {
                     requestData.params = data;
                 }
-                response = await axios.get(url, requestData);
+                response = await instance.get(url, requestData);
             }
             else if (method == "POST") {
-                response = await axios.post(url, data, requestData);
+                response = await instance.post(url, data, requestData);
             }
             else if (method == "DELETE") {
-                response = await axios.delete(url, requestData);
+                response = await instance.delete(url, requestData);
             }
             else if (method == "PUT") {
-                response = await axios.put(url, data, requestData);
+                response = await instance.put(url, data, requestData);
             }
             else {
                 throw new Error(`Invalid method: ${method}`);
