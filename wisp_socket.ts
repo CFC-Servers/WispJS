@@ -85,7 +85,8 @@ export class WispSocket {
         reconnectionAttempts: 50,
         reconnectionDelay: 250,
         reconnectionDelayMax: 5000,
-        randomizationFactor: 0.5
+        randomizationFactor: 0.5,
+        autoConnect: false
       });
 
       socket.on("connect", () => {
@@ -110,6 +111,7 @@ export class WispSocket {
 
         if (reason === "io server disconnect") {
           this.logger.error("Server closed connection - retrying");
+          socket.connect();
         }
       });
 
@@ -138,9 +140,14 @@ export class WispSocket {
 
       setTimeout(() => {
         if (!connectedFirst) {
+          this.logger.info("Socket didn't connect in time");
+          this.logger.error("Socket didn't connect in time");
           reject();
         }
       }, 5000);
+
+      socket.connect();
+      this.logger.info("Sent socket.connect()");
     });
   }
 

@@ -19,7 +19,8 @@ export class WispSocket {
                 reconnectionAttempts: 50,
                 reconnectionDelay: 250,
                 reconnectionDelayMax: 5000,
-                randomizationFactor: 0.5
+                randomizationFactor: 0.5,
+                autoConnect: false
             });
             socket.on("connect", () => {
                 this.logger.info("Connected to WebSocket");
@@ -39,6 +40,7 @@ export class WispSocket {
                 this.logger.error(`Disconnected from WebSocket: ${reason}`);
                 if (reason === "io server disconnect") {
                     this.logger.error("Server closed connection - retrying");
+                    socket.connect();
                 }
             });
             socket.on("reconnect", (attempts) => {
@@ -60,9 +62,13 @@ export class WispSocket {
             this.socket = socket;
             setTimeout(() => {
                 if (!connectedFirst) {
+                    this.logger.info("Socket didn't connect in time");
+                    this.logger.error("Socket didn't connect in time");
                     reject();
                 }
             }, 5000);
+            socket.connect();
+            this.logger.info("Sent socket.connect()");
         });
     }
     filesearch(query) {
