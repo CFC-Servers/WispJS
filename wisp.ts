@@ -12,7 +12,7 @@ export interface WispInterface {
 export class WispInterface {
   constructor(domain: string, uuid: string, token: string) {
     this.logger = {
-      info: (msg: string) => {
+      info: (msg: any) => {
         console.log(msg);
       },
       error: (msg: string) => {

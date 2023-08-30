@@ -59,14 +59,17 @@ export class WispSocket {
                     resolve();
                 }
             });
+            socket.onAny((event, ...args) => {
+                let message = `Received event: ${event}`;
+                this.logger.info(message, JSON.stringify(args));
+            });
             this.socket = socket;
             setTimeout(() => {
                 if (!connectedFirst) {
-                    this.logger.info("Socket didn't connect in time");
                     this.logger.error("Socket didn't connect in time");
                     reject();
                 }
-            }, 15000);
+            }, 20000);
             socket.connect();
             this.logger.info("Sent socket.connect()");
         });
