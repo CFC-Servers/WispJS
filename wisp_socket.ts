@@ -88,7 +88,8 @@ export class WispSocket {
         timeout: 5000,
         extraHeaders: {
           'Authorization': `Bearer ${this.token}`
-        }
+        },
+        transports: ["websocket"]
       });
 
       const socket = this.manager.socket("/");
