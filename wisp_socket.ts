@@ -91,16 +91,16 @@ export class WispSocket {
       });
 
       socket.on("connect", () => {
-        this.logger.info("Connected to WebSocket");
+        console.log("Connected to WebSocket");
         socket.emit("auth", this.token);
       });
 
       socket.on("error", (reason) => {
-        this.logger.error(`WebSocket error: ${reason}`);
+        console.error(`WebSocket error: ${reason}`);
       });
 
       socket.on("connect_error", (error) => {
-        this.logger.error(`WebSocket Connect error: ${error}`);
+        console.error(`WebSocket Connect error: ${error}`);
         if (!connectedFirst) {
           connectedFirst = true;
           reject();
@@ -108,28 +108,28 @@ export class WispSocket {
       });
 
       socket.on("disconnect", (reason) => {
-        this.logger.error(`Disconnected from WebSocket: ${reason}`);
+        console.error(`Disconnected from WebSocket: ${reason}`);
 
         if (reason === "io server disconnect") {
-          this.logger.error("Server closed connection - retrying");
+          console.error("Server closed connection - retrying");
           socket.connect();
         }
       });
 
       socket.on("reconnect", (attempts) => {
-        this.logger.error(`WebSocket succesfully reconnected. Attempts: ${attempts}`);
+        console.error(`WebSocket succesfully reconnected. Attempts: ${attempts}`);
       });
 
       socket.on("reconnect_error", (error) => {
-        this.logger.error(`WebSocket failed to reconnect: ${error}`);
+        console.error(`WebSocket failed to reconnect: ${error}`);
       });
 
       socket.on("reconnect_failed", () => {
-        this.logger.error(`WebSocket failed to reconnect after max attempts`);
+        console.error(`WebSocket failed to reconnect after max attempts`);
       });
 
       socket.on("auth_success", () => {
-        this.logger.info("Auth success");
+        console.info("Auth success");
 
         if (!connectedFirst) {
           connectedFirst = true;
@@ -139,20 +139,20 @@ export class WispSocket {
 
       socket.onAny((event, ...args) => {
         let message = `Received event: ${event}`;
-        this.logger.info(message, JSON.stringify(args));
+        console.info(message, JSON.stringify(args));
       });
 
       this.socket = socket;
 
       setTimeout(() => {
         if (!connectedFirst) {
-          this.logger.error("Socket didn't connect in time");
+          console.error("Socket didn't connect in time");
           reject();
         }
       }, 20000);
 
       socket.connect();
-      this.logger.info("Sent socket.connect()");
+      console.info("Sent socket.connect()");
     });
   }
 
