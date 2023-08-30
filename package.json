@@ -6,6 +6,8 @@
   "main": "dist/wisp.js",
   "types": "dist/wisp.d.ts",
   "scripts": {
+      "test": "tsc && node dist/test.js",
+      "test-debug": "tsc && DEBUG=* node dist/test.js"
   },
   "repository": {
     "type": "git",

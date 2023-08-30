@@ -1,4 +1,4 @@
-import { Manager, Socket } from "socket.io-client";
+import { io, Socket } from "socket.io-client";
 
 interface ConsoleMessage {
   type: string;
@@ -61,7 +61,6 @@ export interface WispSocket {
   url: string;
   token: string;
   ghToken: string;
-  manager: Manager;
 }
 
 // TODO: Handle errors better
@@ -79,20 +78,15 @@ export class WispSocket {
     return new Promise<void>((resolve, reject) => {
       let connectedFirst = false;
 
-      this.manager = new Manager(this.url, {
-        addTrailingSlash: false,
-        autoConnect: true,
+      const socket = io(this.url, {
+        transports: ["websocket"],
         reconnection: true,
         reconnectionAttempts: 50,
         reconnectionDelay: 250,
-        timeout: 5000,
-        extraHeaders: {
-          'Authorization': `Bearer ${this.token}`
-        },
-        transports: ["websocket"]
+        reconnectionDelayMax: 5000,
+        randomizationFactor: 0.5
       });
 
-      const socket = this.manager.socket("");
       socket.on("connect", () => {
         this.logger.info("Connected to WebSocket");
         socket.emit("auth", this.token);

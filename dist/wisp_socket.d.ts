@@ -1,4 +1,4 @@
-import { Manager, Socket } from "socket.io-client";
+import { Socket } from "socket.io-client";
 interface ConsoleMessage {
     type: string;
     line: string;
@@ -54,7 +54,6 @@ export interface WispSocket {
     url: string;
     token: string;
     ghToken: string;
-    manager: Manager;
 }
 export declare class WispSocket {
     constructor(logger: any, url: string, token: string, ghToken: string);

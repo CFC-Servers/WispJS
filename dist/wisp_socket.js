@@ -1,4 +1,4 @@
-import { Manager } from "socket.io-client";
+import { io } from "socket.io-client";
 // TODO: Handle errors better
 // TODO: Allow for no ghToken
 // TODO: Don't require a logger
@@ -12,19 +12,14 @@ export class WispSocket {
     connect() {
         return new Promise((resolve, reject) => {
             let connectedFirst = false;
-            this.manager = new Manager(this.url, {
-                addTrailingSlash: false,
-                autoConnect: true,
+            const socket = io(this.url, {
+                transports: ["websocket"],
                 reconnection: true,
                 reconnectionAttempts: 50,
                 reconnectionDelay: 250,
-                timeout: 5000,
-                extraHeaders: {
-                    'Authorization': `Bearer ${this.token}`
-                },
-                transports: ["websocket"]
+                reconnectionDelayMax: 5000,
+                randomizationFactor: 0.5
             });
-            const socket = this.manager.socket("");
             socket.on("connect", () => {
                 this.logger.info("Connected to WebSocket");
                 socket.emit("auth", this.token);
