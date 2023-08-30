@@ -92,7 +92,7 @@ export class WispSocket {
         transports: ["websocket"]
       });
 
-      const socket = this.manager.socket("/");
+      const socket = this.manager.socket("");
       socket.on("connect", () => {
         this.logger.info("Connected to WebSocket");
         socket.emit("auth", this.token);
@@ -104,7 +104,10 @@ export class WispSocket {
 
       socket.on("connect_error", (error) => {
         this.logger.error(`WebSocket Connect error: ${error}`);
-        reject();
+        if (!connectedFirst) {
+          connectedFirst = true;
+          reject();
+        }
       });
 
       socket.on("disconnect", (reason) => {
