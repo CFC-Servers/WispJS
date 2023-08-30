@@ -1,4 +1,4 @@
-const axios = require("axios");
+import axios from "axios";
 
 type RequestTypes = "GET" | "POST" | "PUT" | "DELETE";
 interface RequestData {

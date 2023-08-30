@@ -8,8 +8,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 const winston = require("winston");
-import { WispAPI } from "./wisp_api.js";
-import { WispSocket } from "./wisp_socket.js";
+import { WispAPI } from "./wisp_api";
+import { WispSocket } from "./wisp_socket";
 export class WispInterface {
     constructor(domain, uuid, token) {
         this.logger = winston.createLogger({

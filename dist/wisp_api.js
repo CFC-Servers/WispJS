@@ -7,7 +7,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-const axios = require("axios");
+import axios from "axios";
 export class WispAPI {
     constructor(domain, uuid, token, logger) {
         this.domain = domain;

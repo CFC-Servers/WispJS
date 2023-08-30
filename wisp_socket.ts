@@ -1,4 +1,4 @@
-import { io, Manager, Socket } from "socket.io-client";
+import { Manager, Socket } from "socket.io-client";
 
 interface ConsoleMessage {
   type: string;

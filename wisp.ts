@@ -1,7 +1,7 @@
 const winston = require("winston");
 
-import { WispAPI } from "./wisp_api.js";
-import { WispSocket } from "./wisp_socket.js";
+import { WispAPI } from "./wisp_api";
+import { WispSocket } from "./wisp_socket";
 
 export { GitCloneResult, GitPullResult, FilesearchResults } from "./wisp_socket";
 
