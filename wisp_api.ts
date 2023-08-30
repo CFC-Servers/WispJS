@@ -40,14 +40,18 @@ export class WispAPI {
           }
 
           url = url + params
+          this.logger.info(`Sending (updated) GET request to ${url}`);
         }
 
         response = await fetch(url, { method: "GET", headers: headers });
+        this.logger.info(`Got response from ${url} - ${response.status}`);
       } else if (method == "POST") {
+        data = JSON.stringify(data);
         response = await fetch(url, { method: "POST", headers: headers, body: data });
       } else if (method == "DELETE") {
         response = await fetch(url, { method: "DELETE", headers: headers });
       } else if (method == "PUT") {
+        data = JSON.stringify(data);
         response = await fetch(url, { method: "PUT", headers: headers, body: data });
       } else {
         throw new Error(`Invalid method: ${method}`);
