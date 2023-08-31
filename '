@@ -279,7 +279,7 @@ export class WispSocket {
     });
   }
 
-  sendCommandNonce(nonce: string, command: string, timeout: number = 1000) {
+  sendCommandNonce(nonce: string, command: string) {
     return new Promise<string>((resolve: Function, reject: Function) => {
       let done = false;
       let callback: (data: ConsoleMessage) => void;
@@ -296,13 +296,6 @@ export class WispSocket {
 
       this.socket.on("console", callback);
       this.socket.emit("send command", command);
-
-      setTimeout(() => {
-        if (!done) {
-          this.socket.off("console", callback);
-          reject();
-        }
-      }, timeout);
     });
   }
 }

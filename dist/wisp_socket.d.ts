@@ -47,6 +47,7 @@ interface ClientToServerEvents {
     "filesearch-start": (query: string) => void;
     "git-clone": (data: GitCloneData) => void;
     "git-pull": (data: GitPullData) => void;
+    "send command": (command: string) => void;
 }
 export interface WispSocket {
     socket: Socket<ServerToClientEvents, ClientToServerEvents>;
@@ -62,5 +63,6 @@ export declare class WispSocket {
     gitPull(dir: string): Promise<GitPullResult>;
     gitClone(url: string, dir: string, branch: string): Promise<GitCloneResult>;
     addConsoleListener(callback: (message: string) => void): void;
+    sendCommandNonce(nonce: string, command: string, timeout?: number): Promise<string>;
 }
 export {};

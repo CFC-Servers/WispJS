@@ -54,8 +54,6 @@ export class WispSocket {
                 console.log(message, JSON.stringify(args));
             });
             setTimeout(() => {
-                console.error(`Connected: ${this.socket?.connected}`);
-                console.error(`Transport: ${this.socket?.io?.engine?.transport?.name}`);
                 if (!connectedFirst) {
                     console.error("Socket didn't connect in time");
                     reject();
@@ -176,6 +174,28 @@ export class WispSocket {
     addConsoleListener(callback) {
         this.socket.on("console", (data) => {
             callback(data.line);
+        });
+    }
+    sendCommandNonce(nonce, command, timeout = 1000) {
+        return new Promise((resolve, reject) => {
+            let done = false;
+            let callback;
+            callback = (data) => {
+                const line = data.line;
+                if (line.startsWith(nonce)) {
+                    this.socket.off("console", callback);
+                    const message = line.slice(nonce.length);
+                    resolve(message);
+                }
+            };
+            this.socket.on("console", callback);
+            this.socket.emit("send command", command);
+            setTimeout(() => {
+                if (!done) {
+                    this.socket.off("console", callback);
+                    reject();
+                }
+            }, timeout);
         });
     }
 }
