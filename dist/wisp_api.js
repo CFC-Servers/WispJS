@@ -15,7 +15,6 @@ export class WispAPI {
             "Accept": "application/vnd.wisp.v1+json",
             "Authorization": `Bearer ${this.token}`
         });
-        console.log("Headers", headers);
         const request = async () => {
             let response;
             if (method == "GET") {
