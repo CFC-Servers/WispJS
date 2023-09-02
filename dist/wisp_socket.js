@@ -62,6 +62,25 @@ export class WispSocket {
             console.log("Sent socket.connect()");
         });
     }
+    disconnect() {
+        return new Promise((resolve, reject) => {
+            let done = false;
+            this.socket.once("disconnect", () => {
+                if (!done) {
+                    done = true;
+                    resolve();
+                }
+            });
+            this.socket.disconnect();
+            setTimeout(() => {
+                if (!done) {
+                    console.error("Socket didn't disconnect in time");
+                    done = true;
+                    reject();
+                }
+            }, 5000);
+        });
+    }
     filesearch(query) {
         return new Promise((resolve, reject) => {
             let done = false;

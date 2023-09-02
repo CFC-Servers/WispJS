@@ -59,6 +59,7 @@ export interface WispSocket {
 export declare class WispSocket {
     constructor(logger: any, url: string, token: string, ghToken: string);
     connect(): Promise<void>;
+    disconnect(): Promise<void>;
     filesearch(query: string): Promise<FilesearchResults>;
     gitPull(dir: string): Promise<GitPullResult>;
     gitClone(url: string, dir: string, branch: string): Promise<GitCloneResult>;

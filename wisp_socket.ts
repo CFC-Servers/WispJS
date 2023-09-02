@@ -140,6 +140,30 @@ export class WispSocket {
     });
   }
 
+  disconnect() {
+    return new Promise<void>((resolve, reject) => {
+      let done = false;
+
+      this.socket.once("disconnect", () => {
+        if (!done) {
+          done = true;
+          resolve();
+        }
+      });
+
+      this.socket.disconnect();
+
+      setTimeout(() => {
+        if (!done) {
+          console.error("Socket didn't disconnect in time");
+          done = true;
+          reject();
+        }
+      }
+      , 5000);
+    });
+  }
+
   filesearch(query: string) {
     return new Promise<FilesearchResults>((resolve, reject) => {
       let done = false;

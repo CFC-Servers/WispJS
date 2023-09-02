@@ -31,4 +31,8 @@ export class WispInterface {
     this.socket = new WispSocket(this.logger, url, websocketInfo.token, ghPAT);
     await this.socket.connect();
   }
+
+  async disconnect() {
+    await this.socket.disconnect();
+  }
 }

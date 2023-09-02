@@ -9,4 +9,5 @@ export interface WispInterface {
 export declare class WispInterface {
     constructor(domain: string, uuid: string, token: string);
     connect(ghPAT: string): Promise<void>;
+    disconnect(): Promise<void>;
 }
