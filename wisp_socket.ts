@@ -247,7 +247,7 @@ export class WispSocket {
     return new Promise<GitCloneResult>((resolve, reject) => {
       let isPrivate = false;
 
-      const finished = (success: boolean) => {
+      const finished = (success: boolean, message?: string) => {
         this.socket.removeAllListeners("git-clone");
         this.socket.removeAllListeners("git-error");
         this.socket.removeAllListeners("git-success");
@@ -259,7 +259,7 @@ export class WispSocket {
 
           resolve(result);
         } else {
-          reject();
+          reject(message);
         }
       }
 
@@ -289,7 +289,7 @@ export class WispSocket {
           sendRequest(true);
         } else {
           this.logger.info(`Error cloning repo: ${message}`);
-          finished(false);
+          finished(false, message);
         }
       });
 
@@ -297,6 +297,8 @@ export class WispSocket {
     });
   }
 
+  // TODO: Should we maintain or own listener chain?
+  // TODO: Create a way to remove listeners
   addConsoleListener(callback: (message: string) => void) {
     this.socket.on("console", (data: ConsoleMessage) => {
       callback(data.line);
