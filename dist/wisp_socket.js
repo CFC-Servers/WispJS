@@ -198,6 +198,7 @@ export class WispSocket {
             let timeoutObj;
             let callback;
             let output = "";
+            console.log(`nonce: [${nonce}]`);
             callback = (data) => {
                 const line = data.line;
                 if (line.startsWith(nonce)) {
@@ -208,6 +209,7 @@ export class WispSocket {
                         resolve(output);
                     }
                     else {
+                        console.log("Got message: ", message);
                         output += message;
                         timeoutObj.refresh();
                     }
