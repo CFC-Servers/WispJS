@@ -32,7 +32,8 @@ export class WispAPI {
     const headers = new Headers({
       "Content-Type": "application/json",
       "Accept": "application/vnd.wisp.v1+json",
-      "Authorization": `Bearer ${this.token}`
+      "Authorization": `Bearer ${this.token}`,
+      "User-Agent": "WispJS (https://github.com/CFC-Servers/wispjs, 1.0.0)"
     });
 
     const request = async () => {
