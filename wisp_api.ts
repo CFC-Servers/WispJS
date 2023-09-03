@@ -7,6 +7,12 @@ export interface WispAPI {
   logger: any;
 }
 
+export type UpdateStartup = {
+    environment: {
+        [key: string]: any
+    };
+}
+
 export type PowerRequest = "start" | "stop" | "restart" | "kill";
 
 export class WispAPI {
@@ -68,6 +74,17 @@ export class WispAPI {
     }
     catch (error) {
       this.logger.error(`Failed to send command: ${error}`);
+      return false
+    }
+  }
+
+  async updateStartup(startup: UpdateStartup) {
+    try {
+      const response = await this.makeRequest("PUT", "startup", startup);
+      return response.ok;
+    }
+    catch (error) {
+      this.logger.error(`Failed to update startup: ${error}`);
       return false
     }
   }

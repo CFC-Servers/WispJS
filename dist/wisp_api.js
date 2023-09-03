@@ -55,6 +55,16 @@ export class WispAPI {
             return false;
         }
     }
+    async updateStartup(startup) {
+        try {
+            const response = await this.makeRequest("PUT", "startup", startup);
+            return response.ok;
+        }
+        catch (error) {
+            this.logger.error(`Failed to update startup: ${error}`);
+            return false;
+        }
+    }
     async getWebsocketDetails() {
         const response = await this.makeRequest("GET", "websocket");
         console.log("Got websocket details response", response);
