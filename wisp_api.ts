@@ -39,12 +39,9 @@ export class WispAPI {
 
           uri.search = params.toString();
           url = uri.toString();
-
-          this.logger.info(`Sending (updated) GET request to ${url}`);
         }
 
         response = await fetch(url, { method: "GET", headers: headers });
-        this.logger.info(`Got response from ${url} - ${response.status}`);
       } else if (method == "POST") {
         data = JSON.stringify(data);
         response = await fetch(url, { method: "POST", headers: headers, body: data });
@@ -60,7 +57,6 @@ export class WispAPI {
       return response;
     }
 
-    this.logger.info(`Sending ${method} request to ${url}`);
     return await request();
   }
 
