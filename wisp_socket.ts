@@ -311,13 +311,13 @@ export class WispSocket {
                 const line = data.line;
                 if (line.startsWith(nonce)) {
                     const message = line.slice(nonce.length);
-                    output += message;
 
                     if (message === "Done.") {
                         this.socket.off("console", callback);
                         clearTimeout(timeoutObj);
                         resolve(output);
                     } else {
+                        output += message;
                         timeoutObj.refresh();
                     }
                 }
@@ -327,6 +327,7 @@ export class WispSocket {
             this.socket.emit("send command", command);
 
             timeoutObj = setTimeout(() => {
+                console.error("Command timed out current output: ", output);
                 this.socket.off("console", callback);
                 reject("Timeout");
             }, timeout);
