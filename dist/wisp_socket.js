@@ -195,23 +195,29 @@ export class WispSocket {
     }
     sendCommandNonce(nonce, command, timeout = 1000) {
         return new Promise((resolve, reject) => {
-            let done = false;
+            let timeoutObj;
             let callback;
+            let output = "";
             callback = (data) => {
                 const line = data.line;
                 if (line.startsWith(nonce)) {
-                    this.socket.off("console", callback);
                     const message = line.slice(nonce.length);
-                    resolve(message);
+                    output += message;
+                    if (message === "Done.") {
+                        this.socket.off("console", callback);
+                        clearTimeout(timeoutObj);
+                        resolve(output);
+                    }
+                    else {
+                        timeoutObj.refresh();
+                    }
                 }
             };
             this.socket.on("console", callback);
             this.socket.emit("send command", command);
-            setTimeout(() => {
-                if (!done) {
-                    this.socket.off("console", callback);
-                    reject();
-                }
+            timeoutObj = setTimeout(() => {
+                this.socket.off("console", callback);
+                reject("Timeout");
             }, timeout);
         });
     }
