@@ -306,7 +306,6 @@ export class WispSocket {
             let callback: (data: ConsoleMessage) => void;
 
             let output = "";
-            console.log(`nonce: [${nonce}]`);
 
             callback = (data: ConsoleMessage) => {
                 const line = data.line;
@@ -318,7 +317,6 @@ export class WispSocket {
                         clearTimeout(timeoutObj);
                         resolve(output);
                     } else {
-                        console.log("Got message: ", message);
                         output += message;
                         timeoutObj.refresh();
                     }
