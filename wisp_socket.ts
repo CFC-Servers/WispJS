@@ -124,11 +124,6 @@ export class WispSocket {
         }
       });
 
-      this.socket.onAny((event, ...args) => {
-        let message = `Received event: ${event}`;
-        console.log(message, JSON.stringify(args));
-      });
-
       setTimeout(() => {
         if (!connectedFirst) {
           console.error("Socket didn't connect in time");
