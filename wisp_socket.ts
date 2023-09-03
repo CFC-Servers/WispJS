@@ -235,7 +235,7 @@ export class WispSocket {
           sendRequest(true);
         } else {
           this.logger.error(`Error updating addon: ${message}`);
-          finished(false, "");
+          finished(false, message);
         }
       });
 

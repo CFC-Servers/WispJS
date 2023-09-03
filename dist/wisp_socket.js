@@ -139,7 +139,7 @@ export class WispSocket {
                 }
                 else {
                     this.logger.error(`Error updating addon: ${message}`);
-                    finished(false, "");
+                    finished(false, message);
                 }
             });
             sendRequest();
