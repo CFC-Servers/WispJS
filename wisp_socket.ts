@@ -1,3 +1,4 @@
+import { WispAPI } from "./wisp_api.js";
 import { io, Socket } from "socket.io-client";
 
 interface ConsoleMessage {
@@ -59,6 +60,7 @@ interface ClientToServerEvents {
 export interface WispSocket {
     socket: Socket<ServerToClientEvents, ClientToServerEvents>;
     logger: any;
+    api: WispAPI;
     url: string;
     token: string;
     ghToken: string;
@@ -68,17 +70,36 @@ export interface WispSocket {
 // TODO: Allow for no ghToken
 // TODO: Don't require a logger
 export class WispSocket {
-    constructor(logger: any, url: string, token: string, ghToken: string) {
+    constructor(logger: any, api: WispAPI, ghToken: string) {
         this.logger = logger;
-        this.url = url;
-        this.token = token;
+        this.api = api;
         this.ghToken = ghToken;
+
+        this.url = "";
+        this.token = "";
     }
 
-    connect() {
+    setDetails() {
+        return new Promise<void>((resolve, reject) => {
+            this.api.getWebsocketDetails().then(websocketInfo => {
+                this.url = websocketInfo.url.replace("us-phs-chi23.physgun.com:8080", "wispproxy.cfcservers.org");
+                this.token = websocketInfo.token;
+
+                this.logger.info(`Got Websocket Details`);
+                resolve();
+            }).catch(err => {
+                this.logger.error(`Failed to get websocket details: ${err}`);
+                reject(err);
+            });
+        });
+    }
+
+    _connect() {
+        let reconnectDelay = 1;
+
         return new Promise<void>((resolve, reject) => {
             let connectedFirst = false;
-            console.log("Connecting to WebSocket", this.url, this.token);
+            console.log("Connecting to WebSocket");
 
             this.socket = io(this.url, {
                 forceNew: true,
@@ -94,11 +115,11 @@ export class WispSocket {
                 this.socket.emit("auth", this.token);
             });
 
-            this.socket.on("error", (reason) => {
+            this.socket.on("error", (reason: string) => {
                 console.error(`WebSocket error: ${reason}`);
             });
 
-            this.socket.on("connect_error", (error) => {
+            this.socket.on("connect_error", (error: string) => {
                 console.error(`WebSocket Connect error: ${error.toString()}`);
                 if (!connectedFirst) {
                     connectedFirst = true;
@@ -106,12 +127,18 @@ export class WispSocket {
                 }
             });
 
-            this.socket.on("disconnect", (reason) => {
+            this.socket.on("disconnect", (reason: string) => {
                 console.error(`Disconnected from WebSocket: ${reason}`);
 
                 if (reason === "io server disconnect") {
-                    console.error("Server closed connection - retrying");
-                    this.socket.connect();
+                    console.error(`Server closed connection - retrying (delay: ${reconnectDelay})`);
+
+                    setTimeout(() => {
+                        reconnectDelay = reconnectDelay * 1.2;
+                        this.setDetails().then(() => {
+                            this.socket.connect();
+                        });
+                    }, reconnectDelay * 1000);
                 }
             });
 
@@ -133,6 +160,11 @@ export class WispSocket {
 
             console.log("Sent socket.connect()");
         });
+    }
+
+    async connect() {
+        await this.setDetails();
+        await this._connect();
     }
 
     disconnect() {
