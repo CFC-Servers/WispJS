@@ -1,4 +1,3 @@
-import { WispAPI } from "./wisp_api.js";
 import { io, Socket } from "socket.io-client";
 
 interface ConsoleMessage {
@@ -60,7 +59,7 @@ interface ClientToServerEvents {
 export interface WispSocket {
     socket: Socket<ServerToClientEvents, ClientToServerEvents>;
     logger: any;
-    api: WispAPI;
+    api: any;
     url: string;
     token: string;
     ghToken: string;
@@ -70,7 +69,7 @@ export interface WispSocket {
 // TODO: Allow for no ghToken
 // TODO: Don't require a logger
 export class WispSocket {
-    constructor(logger: any, api: WispAPI, ghToken: string) {
+    constructor(logger: any, api: any, ghToken: string) {
         this.logger = logger;
         this.api = api;
         this.ghToken = ghToken;
