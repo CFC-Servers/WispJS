@@ -65,6 +65,11 @@ export interface WispSocket {
     ghToken: string;
 }
 
+interface WebsocketInfo {
+    token: string;
+    url: string;
+}
+
 // TODO: Handle errors better
 // TODO: Allow for no ghToken
 // TODO: Don't require a logger
@@ -80,13 +85,13 @@ export class WispSocket {
 
     setDetails() {
         return new Promise<void>((resolve, reject) => {
-            this.api.getWebsocketDetails().then(websocketInfo => {
+            this.api.getWebsocketDetails().then((websocketInfo: WebsocketInfo) => {
                 this.url = websocketInfo.url.replace("us-phs-chi23.physgun.com:8080", "wispproxy.cfcservers.org");
                 this.token = websocketInfo.token;
 
                 this.logger.info(`Got Websocket Details`);
                 resolve();
-            }).catch(err => {
+            }).catch((err: string) => {
                 this.logger.error(`Failed to get websocket details: ${err}`);
                 reject(err);
             });
@@ -118,7 +123,7 @@ export class WispSocket {
                 console.error(`WebSocket error: ${reason}`);
             });
 
-            this.socket.on("connect_error", (error: string) => {
+            this.socket.on("connect_error", (error: Error) => {
                 console.error(`WebSocket Connect error: ${error.toString()}`);
                 if (!connectedFirst) {
                     connectedFirst = true;

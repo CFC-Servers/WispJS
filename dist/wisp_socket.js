@@ -3,16 +3,31 @@ import { io } from "socket.io-client";
 // TODO: Allow for no ghToken
 // TODO: Don't require a logger
 export class WispSocket {
-    constructor(logger, url, token, ghToken) {
+    constructor(logger, api, ghToken) {
         this.logger = logger;
-        this.url = url;
-        this.token = token;
+        this.api = api;
         this.ghToken = ghToken;
+        this.url = "";
+        this.token = "";
     }
-    connect() {
+    setDetails() {
+        return new Promise((resolve, reject) => {
+            this.api.getWebsocketDetails().then((websocketInfo) => {
+                this.url = websocketInfo.url.replace("us-phs-chi23.physgun.com:8080", "wispproxy.cfcservers.org");
+                this.token = websocketInfo.token;
+                this.logger.info(`Got Websocket Details`);
+                resolve();
+            }).catch((err) => {
+                this.logger.error(`Failed to get websocket details: ${err}`);
+                reject(err);
+            });
+        });
+    }
+    _connect() {
+        let reconnectDelay = 1;
         return new Promise((resolve, reject) => {
             let connectedFirst = false;
-            console.log("Connecting to WebSocket", this.url, this.token);
+            console.log("Connecting to WebSocket");
             this.socket = io(this.url, {
                 forceNew: true,
                 transports: ["websocket"],
@@ -38,8 +53,13 @@ export class WispSocket {
             this.socket.on("disconnect", (reason) => {
                 console.error(`Disconnected from WebSocket: ${reason}`);
                 if (reason === "io server disconnect") {
-                    console.error("Server closed connection - retrying");
-                    this.socket.connect();
+                    console.error(`Server closed connection - retrying (delay: ${reconnectDelay})`);
+                    setTimeout(() => {
+                        reconnectDelay = reconnectDelay * 1.2;
+                        this.setDetails().then(() => {
+                            this.socket.connect();
+                        });
+                    }, reconnectDelay * 1000);
                 }
             });
             this.socket.on("auth_success", () => {
@@ -57,6 +77,10 @@ export class WispSocket {
             }, 5000);
             console.log("Sent socket.connect()");
         });
+    }
+    async connect() {
+        await this.setDetails();
+        await this._connect();
     }
     disconnect() {
         return new Promise((resolve, reject) => {

@@ -52,12 +52,15 @@ interface ClientToServerEvents {
 export interface WispSocket {
     socket: Socket<ServerToClientEvents, ClientToServerEvents>;
     logger: any;
+    api: any;
     url: string;
     token: string;
     ghToken: string;
 }
 export declare class WispSocket {
-    constructor(logger: any, url: string, token: string, ghToken: string);
+    constructor(logger: any, api: any, ghToken: string);
+    setDetails(): Promise<void>;
+    _connect(): Promise<void>;
     connect(): Promise<void>;
     disconnect(): Promise<void>;
     filesearch(query: string): Promise<FilesearchResults>;
