@@ -1,4 +1,4 @@
-type RequestTypes = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+export type RequestTypes = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 export interface WispAPI {
   domain: string;
@@ -56,7 +56,7 @@ export type DirectoryFile = {
   }
 }
 
-export interface DirectoryContentsResponse {
+export type DirectoryContentsResponse = {
   object: "list";
   data: DirectoryFile[]
   meta: {

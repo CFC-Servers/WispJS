@@ -1,42 +1,42 @@
 import { io, Socket } from "socket.io-client";
 
-interface ConsoleMessage {
+export type ConsoleMessage = {
     type: string;
     line: string;
 }
 
-interface GitCloneData {
+export type GitCloneData = {
     dir: string;
     url: string;
     branch: string;
     authkey?: string | undefined;
 }
 
-export interface GitCloneResult {
+export type GitCloneResult = {
     isPrivate: boolean;
 }
 
-interface GitPullData {
+export type GitPullData = {
     dir: string;
     authkey?: string;
 }
 
-export interface GitPullResult {
+export type GitPullResult = {
     output: string;
     isPrivate: boolean;
 }
 
-interface FilesearchFile {
+export type FilesearchFile = {
     results: number;
     lines: {[key: string]: string};
 }
 
-export interface FilesearchResults {
+export type FilesearchResults = {
     files: {[key: string]: FilesearchFile};
     tooMany: boolean;
 }
 
-interface ServerToClientEvents {
+export type ServerToClientEvents = {
     "error": (message: string) => void;
     "auth_success": (message: string) => void;
     "filesearch-results": (data: FilesearchResults) => void;
@@ -47,7 +47,7 @@ interface ServerToClientEvents {
     "console": (message: ConsoleMessage) => void;
 }
 
-interface ClientToServerEvents {
+export type ClientToServerEvents = {
     "auth": (token: string) => void;
     "filesearch-start": (query: string) => void;
     "git-clone": (data: GitCloneData) => void;
@@ -55,6 +55,10 @@ interface ClientToServerEvents {
     "send command": (command: string) => void;
 }
 
+export type WebsocketInfo = {
+    token: string;
+    url: string;
+}
 
 export interface WispSocket {
     socket: Socket<ServerToClientEvents, ClientToServerEvents>;
@@ -63,11 +67,6 @@ export interface WispSocket {
     url: string;
     token: string;
     ghToken: string;
-}
-
-interface WebsocketInfo {
-    token: string;
-    url: string;
 }
 
 // TODO: Handle errors better
