@@ -2,7 +2,7 @@ import { WispAPICore } from "./wisp_api/index";
 import { AllocationsAPI } from "./wisp_api/allocations";
 import { AuditLogsAPI } from "./wisp_api/audit_log";
 import { BackupsAPI } from "./wisp_api/backups";
-import { DatabasesAPI } from "./wisp_api/database";
+import { DatabasesAPI } from "./wisp_api/databases";
 import { FastDLAPI } from "./wisp_api/fastdl";
 import { FilesystemAPI } from "./wisp_api/filesystem";
 import { ModsAPI } from "./wisp_api/mods";
