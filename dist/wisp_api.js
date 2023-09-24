@@ -45,6 +45,11 @@ export class WispAPI {
             else {
                 throw new Error(`Invalid method: ${method}`);
             }
+            if (!response.ok) {
+                const err = `Request failed! ${method} -> '${url}: ${response.status} - ${response.statusText}`;
+                console.error(err);
+                throw new Error(err);
+            }
             return response;
         };
         return await request();
@@ -72,7 +77,6 @@ export class WispAPI {
     }
     async getWebsocketDetails() {
         const response = await this.makeRequest("GET", "websocket");
-        console.log("Got websocket details response", response);
         return await response.json();
     }
     async getServerDetails() {
