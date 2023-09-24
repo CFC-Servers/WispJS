@@ -1,4 +1,4 @@
-type RequestTypes = "GET" | "POST" | "PUT" | "DELETE";
+type RequestTypes = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 export interface WispAPI {
   domain: string;
@@ -57,6 +57,9 @@ export class WispAPI {
       } else if (method == "PUT") {
         data = JSON.stringify(data);
         response = await fetch(url, { method: "PUT", headers: headers, body: data });
+      } else if (method == "PATCH") {
+        data = JSON.stringify(data);
+        response = await fetch(url, { method: "PATCH", headers: headers, body: data });
       } else {
         throw new Error(`Invalid method: ${method}`);
       }
@@ -137,7 +140,7 @@ export class WispAPI {
 
   async renameFile(path: string, newPath: string) {
     const data = { path: path, to: newPath };
-    return await this.makeRequest("PUT", "files/rename", data);
+    return await this.makeRequest("PATCH", "files/rename", data);
   }
 
   // FastDL

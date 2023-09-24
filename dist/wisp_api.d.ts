@@ -1,4 +1,4 @@
-type RequestTypes = "GET" | "POST" | "PUT" | "DELETE";
+type RequestTypes = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 export interface WispAPI {
     domain: string;
     uuid: string;
