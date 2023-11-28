@@ -7,7 +7,8 @@
   "types": "dist/wisp.d.ts",
   "scripts": {
     "test": "tsc && node dist/test.js",
-    "test-debug": "tsc && DEBUG=* node dist/test.js"
+    "test-debug": "tsc && DEBUG=* node dist/test.js",
+    "build": "tsc && typedoc wisp.ts wisp_api/index.ts wisp_socket/index.ts wisp_api/apis/*"
   },
   "repository": {
     "type": "git",
