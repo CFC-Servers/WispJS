@@ -54,10 +54,20 @@ export type GetAllSubuserPermissionsResponse = {
   assignable: Permission[];
 }
 
+/**
+ * Handles interfacing with the Subusers API
+ *
+ * @public
+ */
 export class SubusersAPI {
   constructor(private core: WispAPICore) {}
 
-  // [GET] /api/client/servers/<UUID>/subusers
+
+  /**
+   * Lists all Subusers for the Server
+   *
+   * @public
+   */
   async List(): Promise<GetSubusersResponse> {
     const response = await this.core.makeRequest("GET", "subusers", { include: "user" });
     const data: GetSubusersResponse = await response.json();
@@ -65,7 +75,14 @@ export class SubusersAPI {
     return data;
   }
 
-  // [GET] /api/client/servers/<UUID>/subusers/<SUB_ID>
+
+  /**
+   * Retrieves the details for the Subuser
+   *
+   * @param id The ID of the Subuser
+   *
+   * @public
+   */
   async GetDetails(id: string): Promise<Subuser> {
     const response = await this.core.makeRequest("GET", `subusers/${id}`, { include: "user" });
     const data: Subuser = await response.json();
@@ -73,7 +90,12 @@ export class SubusersAPI {
     return data;
   }
 
-  // [GET] /api/client/servers/<UUID>/subusers/permissions
+
+  /**
+   * Get all permissions available to Subusers
+   *
+   * @public
+   */
   async GetAllPermissions(): Promise<GetAllSubuserPermissionsResponse> {
     const response = await this.core.makeRequest("GET", "subusers/permissions");
     const data: GetAllSubuserPermissionsResponse = await response.json();
@@ -81,20 +103,37 @@ export class SubusersAPI {
     return data;
   }
 
-  // [POST] /api/client/servers/<UUID>/subusers
+
+  /**
+   * Creates a new Subuser
+   *
+   * @param email The email for the Subuser
+   * @param permissions The Permissions to grant to the Subuser
+   *
+   * @public
+   */
   async Create(email: string, permissions: Permission[]): Promise<Subuser> {
-    const data = {
+    const requestData = {
       email: email,
       permissions: permissions
     }
 
-    const response = await this.core.makeRequest("POST", "subusers", data);
-    const responseData: Subuser = await response.json();
+    const response = await this.core.makeRequest("POST", "subusers", requestData);
+    const data: Subuser = await response.json();
 
-    return responseData;
+    return data;
   }
 
-  // [PATCH] /api/client/servers/<UUID>/subusers/<SUB_ID>
+
+  /**
+   * Updates the Subuser
+   *
+   * @param id The ID of the Subuser
+   * @param email The new email of the Subuser
+   * @param permissions The new permissions for the Subuser
+   *
+   * @public
+   */
   async Update(id: string, email: string, permissions: Permission[]): Promise<Subuser> {
     const data = {
       email: email,
@@ -107,8 +146,14 @@ export class SubusersAPI {
     return responseData;
   }
 
-  // [DELETE] /api/client/servers/<UUID>/subusers/<SUB_ID>
-  async Delete(id: string): Promise<Response> {
-    return await this.core.makeRequest("DELETE", `subusers/${id}`);
+  /**
+   * Deletes the Subuser
+   *
+   * @param id The ID of the Subuser
+   *
+   * @public
+   */
+  async Delete(id: string): Promise<void> {
+    await this.core.makeRequest("DELETE", `subusers/${id}`);
   }
 }

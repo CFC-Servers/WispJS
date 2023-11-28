@@ -26,10 +26,19 @@ export type StartupDetails = {
   };
 }
 
+/**
+ * Handles interaction with Server Startup information
+ *
+ * @public
+ */
 export class StartupAPI {
   constructor(private core: WispAPICore) {}
 
-  // [GET] /api/client/servers/<UUID>/startup
+  /**
+   * Gets all Startup details for the Server
+   *
+   * @public
+   */
   async Get(): Promise<StartupDetails> {
     const response = await this.core.makeRequest("GET", "startup");
     const startupDetails: StartupDetails = await response.json();
@@ -37,9 +46,20 @@ export class StartupAPI {
     return startupDetails;
   }
 
-  // [PUT] /api/client/servers/<UUID>/startup
-  // "Pass the variables with their new value to update them. Response will contain the new updated startup."
-  async Update(startup: UpdateStartup): Promise<Response> {
-    return await this.core.makeRequest("PUT", "startup", startup);
+  /**
+   * Updates the Startup details for the Server
+   *
+   * @remarks 
+   * ℹ️  Pass the variables with their new value to update them. Response will contain the new updated startup
+   *
+   * @param startup The Startup values to update
+   *
+   * @public
+   */
+  async Update(startup: UpdateStartup): Promise<StartupDetails> {
+    const response = await this.core.makeRequest("PUT", "startup", startup);
+    const data: StartupDetails = await response.json();
+
+    return data;
   }
 }

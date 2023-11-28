@@ -11,6 +11,11 @@ import { ServersAPI } from "./apis/servers.js";
 import { StartupAPI } from "./apis/startup.js";
 import { SubusersAPI } from "./apis/subusers.js";
 
+/**
+ * An Interface for the Wisp HTTP API
+ *
+ * @public
+ */
 export class WispAPI {
   private core: WispAPICore;
 
@@ -26,6 +31,14 @@ export class WispAPI {
   public Startup: StartupAPI;
   public Subusers: SubusersAPI;
 
+  /**
+   * @param domain The domain name for your panel
+   * @param uuid The UUID of the Server that all future API calls will reference
+   * @param token The panel API token to use for authorization
+   * @param logger The logger to use for all API logging
+   *
+   * @internal
+   */
   constructor(domain: string, uuid: string, token: string, logger: any) {
     this.core = new WispAPICore(domain, uuid, token, logger);
 

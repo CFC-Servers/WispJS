@@ -31,10 +31,20 @@ export type GetDatabasesResponse = {
   }
 }
 
+/**
+ * Handles Creating, Listing, Updating, and Deleting of Databases for the Server
+ *
+ * @public
+ */
 export class DatabasesAPI {
   constructor(private core: WispAPICore) {}
 
-  // [GET] /api/client/servers/<UUID>/databases
+  // TODO: Handle Pagination
+  /**
+   * Lists all Databases associated with the Server
+   *
+   * @public
+   */
   async List(): Promise<GetDatabasesResponse> {
     const response = await this.core.makeRequest("GET", "databases", { include: "hosts" });
     const data: GetDatabasesResponse = await response.json();
@@ -42,14 +52,28 @@ export class DatabasesAPI {
     return data;
   }
 
+
   // TODO: verify response
-  // [DELETE] /api/client/servers/<UUID>/databases/<ID>
+  /**
+   * Deletes the Database from the Server
+   *
+   * @param id The ID of the Backup
+   *
+   * @public
+   */
   async Delete(id: string): Promise<Response> {
     return await this.core.makeRequest("DELETE", `databases/${id}`);
   }
 
+
   // TODO: Verify response
-  // [POST] /api/client/servers/<UUID>/databases/<ID>/rotate-password
+  /**
+   * Rotates the password for the Backup
+   *
+   * @param id The ID of the Backup
+   *
+   * @public
+   */
   async RotatePassword(id: string): Promise<Response> {
     return await this.core.makeRequest("POST", `databases/${id}`);
   }

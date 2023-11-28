@@ -62,10 +62,20 @@ export type CreateScheduleTaskRequest = {
   payload: string | null;
 }
 
+/**
+ * Handles interactions with Server Schedules
+ *
+ * @public
+ */
 export class SchedulesAPI {
   constructor(private core: WispAPICore) {}
 
-  // [GET] /api/client/servers/<UUID>/schedules
+
+  /**
+   * Retrieves all of the Schedules for the Server
+   *
+   * @public
+   */
   async List(): Promise<GetSchedulesResponse> {
     const response = await this.core.makeRequest("GET", "schedules", { include: "tasks" });
     const data: GetSchedulesResponse = await response.json();
@@ -73,7 +83,14 @@ export class SchedulesAPI {
     return data
   }
 
-  // [GET] /api/client/servers/<UUID>/schedules/<ID>
+
+  /**
+   * Retrieves the Details for the Schedule
+   *
+   * @param id The ID of the Schedule
+   *
+   * @public
+   */
   async GetDetails(id: string): Promise<Schedule> {
     const response = await this.core.makeRequest("GET", `schedules/${id}`, { include: "tasks" });
     const data: Schedule = await response.json();
@@ -81,9 +98,27 @@ export class SchedulesAPI {
     return data;
   }
 
-  // [POST] /api/client/servers/<UUID>/schedules
+
+  /**
+   * Creates a new Schedule
+   *
+   * @example
+   * Creates a Schedule that runs at 12am every day
+   * ```
+   * await wisp.api.Schedules.Create("Example", "0", "0", "*", "*", true);
+   * ```
+   *
+   * @param name The name of the Schedule
+   * @param minute The Cron minute string
+   * @param hour The Cron hour string
+   * @param dow The Cron day of week string
+   * @param dom The Cron day of month string
+   * @param active Whether to enable the Schedle on creation
+   *
+   * @public
+   */
   async Create(name: string, minute: string, hour: string, dow: string, dom: string, active: boolean): Promise<Schedule> {
-    const data: CreateScheduleRequest = {
+    const requestData: CreateScheduleRequest = {
       name: name,
       cron_minute: minute,
       cron_hour: hour,
@@ -92,15 +127,28 @@ export class SchedulesAPI {
       is_active: active
     }
 
-    const response = await this.core.makeRequest("POST", "schedules", data);
-    const responseData: Schedule = await response.json();
+    const response = await this.core.makeRequest("POST", "schedules", requestData);
+    const data: Schedule = await response.json();
 
-    return responseData;
+    return data;
   }
 
-  // [PATCH] /api/client/servers/<UUID>/schedules/<ID>
+
+  /**
+   * Updates the values of the Schedule
+   *
+   * @param id The ID of the Schedule
+   * @param name The name of the Schedule
+   * @param minute The Cron minute string
+   * @param hour The Cron hour string
+   * @param dow The Cron day of week string
+   * @param dom The Cron day of month string
+   * @param active Whether to enable the Schedle on creation
+   *
+   * @public
+   */
   async Update(id: string, name: string, minute: string, hour: string, dow: string, dom: string, active: boolean): Promise<Schedule> {
-    const data: CreateScheduleRequest = {
+    const requestData: CreateScheduleRequest = {
       name: name,
       cron_minute: minute,
       cron_hour: hour,
@@ -109,54 +157,101 @@ export class SchedulesAPI {
       is_active: active
     }
 
-    const response = await this.core.makeRequest("PATCH", `schedules/${id}`, data);
-    const responseData: Schedule = await response.json();
+    const response = await this.core.makeRequest("PATCH", `schedules/${id}`, requestData);
+    const data: Schedule = await response.json();
 
-    return responseData;
+    return data;
   }
 
-  // [POST] /api/client/servers/<UUID>/schedules/<ID>/trigger
-  async Trigger(id: string): Promise<Response> {
-    return await this.core.makeRequest("POST", `schedules/${id}`);
+
+  /**
+   * Triggers the Schedule
+   *
+   * @param id The ID of the Schedule
+   *
+   * @public
+   */
+  async Trigger(id: string): Promise<void> {
+    await this.core.makeRequest("POST", `schedules/${id}`);
   }
 
-  // [DELETE] /api/client/servers/<UUID>/schedules/<ID>
-  async Delete(id: string): Promise<Response> {
-    return await this.core.makeRequest("DELETE", `schedules/${id}`);
+
+  /**
+   * Deletes the Schedule
+   *
+   * @param id The ID of the Schedule
+   *
+   * @public
+   */
+  async Delete(id: string): Promise<void> {
+    await this.core.makeRequest("DELETE", `schedules/${id}`);
   }
 
-  // [POST] /api/client/servers/<UUID>/schedules/<SCHEDULE_ID>/tasks
-  // "Payload is not required for backup action!"
+
+  /**
+   * Creates a new Task for a Schedule
+   *
+   * @remarks
+   * ℹ️  Payload is not required for backup action!
+   *
+   * @param id The ID of the Schedule to create a Task for
+   * @param action The Task action. One of: ["command", "power", "backup"]
+   * @param timeOffset The time offset of the Task
+   * @param payload The payload to provide to the Task
+   *
+   * @public
+   */
   async CreateTask(id: string, action: ScheduleTaskAction, timeOffset: number, payload: string | null): Promise<ScheduleTask> {
-    const data: CreateScheduleTaskRequest = {
+    const requestData: CreateScheduleTaskRequest = {
       action: action,
       time_offset: timeOffset,
       payload: payload
     }
 
-    const response = await this.core.makeRequest("POST", `schedules/${id}/tasks`, data);
-    const responseData: ScheduleTask = await response.json();
+    const response = await this.core.makeRequest("POST", `schedules/${id}/tasks`, requestData);
+    const data: ScheduleTask = await response.json();
 
-    return responseData;
+    return data;
   }
 
-  // [PATCH] /api/client/servers/<UUID>/schedules/<SCHEDULE_ID>/task/<TASK_ID>
-  // "Payload is not required for backup action!"
+
+  /**
+   * Update the Task
+   *
+   * @remarks
+   * ℹ️  Payload is not required for backup action!
+   *
+   * @param scheduleID The ID of the Schedule that contains the Task
+   * @param taskID The ID of the Task
+   * @param action The Task action. One of: ["command", "power", "backup"]
+   * @param timeOffset The time offset of the Task
+   * @param payload The payload to provide to the Task
+   *
+   * @public
+   */
   async UpdateTask(scheduleID: string, taskID: string, action: ScheduleTaskAction, timeOffset: number, payload: string | null): Promise<ScheduleTask> {
-    const data: CreateScheduleTaskRequest = {
+    const requestData: CreateScheduleTaskRequest = {
       action: action,
       time_offset: timeOffset,
       payload: payload
     }
 
-    const response = await this.core.makeRequest("PATCH", `schedules/${scheduleID}/tasks/${taskID}`, data);
-    const responseData: ScheduleTask = await response.json();
+    const response = await this.core.makeRequest("PATCH", `schedules/${scheduleID}/tasks/${taskID}`, requestData);
+    const data: ScheduleTask = await response.json();
 
-    return responseData;
+    return data;
   }
 
-  // [DELETE] /api/client/servers/<UUID>/schedules/<SCHEDULE_ID>/task/<TASK_ID>
-  async DeleteTask(scheduleID: string, taskID: string): Promise<Response> {
-    return await this.core.makeRequest("DELETE", `schedules/${scheduleID}/tasks/${taskID}`);
+
+  /**
+   * Delete the Task
+   *
+   * @param scheduleID The ID of the Schedule that contains the Task
+   * @param taskID The ID of the Task
+   *
+   * @public
+   */
+  async DeleteTask(scheduleID: string, taskID: string): Promise<void> {
+    await this.core.makeRequest("DELETE", `schedules/${scheduleID}/tasks/${taskID}`);
   }
 }
