@@ -4,9 +4,9 @@ import type { PaginationData } from "./index";
 export type Allocation = {
   object: "allocation";
   attributes: {
+    id: number;
     primary: boolean;
     ip: string;
-    alias: string;
     port: number;
   }
 }
@@ -16,6 +16,16 @@ export type GetAllocationsResponse = {
   data: Allocation[];
   meta: {
     pagination: PaginationData;
+  }
+}
+
+export type UpdateAllocationResponse = {
+  object: "allocation";
+  attributes: {
+    id: number;
+    primary: boolean;
+    ip: string;
+    port: number;
   }
 }
 
@@ -31,7 +41,12 @@ export class AllocationsAPI {
   }
 
   // [PUT] /api/client/servers/<UUID>/allocations/<ID>
-  async Update(id: string): Promise<Response> {
-    return await this.core.makeRequest("PUT", `allocations/${id}`);
+  /**
+   * Sets the new Primary allocation for the server
+   * @param id Allocation ID of the new primary allocation
+   */
+  async Update(id: string): Promise<UpdateAllocationResponse> {
+    const response = await this.core.makeRequest("PUT", `allocations/${id}`);
+    return await response.json()
   }
 }
