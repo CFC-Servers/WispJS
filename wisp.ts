@@ -1,5 +1,5 @@
-import { WispAPI } from "./wisp_api.js";
-import { WispSocket } from "./wisp_socket.js";
+import { WispAPI } from "./wisp_api/index.js";
+import { WispSocket } from "./wisp_socket/index.js";
 
 export interface WispInterface {
   socket: WispSocket;
