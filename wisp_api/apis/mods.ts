@@ -1,6 +1,6 @@
 import { WispAPICore } from "./index";
 
-export type Mod = {
+export interface Mod {
   object: "mod";
   attributes: {
     id: number;
@@ -13,7 +13,7 @@ export type Mod = {
   }
 }
 
-export type GetModsResponse = {
+export interface GetModsResponse {
   object: "list";
   data: Mod[];
 }

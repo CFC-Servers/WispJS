@@ -2,8 +2,9 @@ import { WispAPICore } from "./index";
 import type { PaginationData } from "./index";
 
 // TODO: Handle the 204 vs. 200 with errors better
+// TODO: Use the cool `never` thing for all error pieces in here
 
-export type DirectoryFile = {
+export interface DirectoryFile {
   object: "file";
   attributes: {
     type: "file" | "directory";
@@ -16,7 +17,7 @@ export type DirectoryFile = {
   }
 }
 
-export type DirectoryContents = {
+export interface DirectoryContents {
   object: "list";
   data: DirectoryFile[]
   meta: {
@@ -24,18 +25,27 @@ export type DirectoryContents = {
   }
 }
 export type GetDirectoryContentsErrorCode = "generic.daemon_connection_exception";
-export type GetDirectoryContentsError = {
+export interface GetDirectoryContentsError {
     code: GetDirectoryContentsErrorCode;
     data: {
         code: number;
     }
 }
-export type GetDirectoryContentsFailure = {
+export interface GetDirectoryContentsFailure {
     errors: GetDirectoryContentsError[] | undefined
 }
+
+/**
+ * The response object for the GetDirectoryContents call
+ *
+ * @remarks
+ * Used in {@link FilesystemAPI.GetDirectoryContents}
+ *
+ * @public
+ */
 export type GetDirectoryContentsResponse = DirectoryContents | GetDirectoryContentsFailure;
 
-export type FileReadError = {
+export interface FileReadError {
     code: string;
     data: {
         code: number
@@ -46,25 +56,25 @@ export type FileReadResponse =
     | { content: string; errors?: never };
 
 
-export type FileWriteRequest = {
+export interface FileWriteRequest {
   path: string;
   content: string;
 }
 
-export type CopyFileRequest = {
+export interface CopyFileRequest {
   path: string;
 }
 
-export type DownloadFileResponse = {
+export interface DownloadFileResponse {
   url: string;
 }
 
-export type RenameFileRequest = {
+export interface RenameFileRequest {
   path: string;
   to: string;
 }
 
-export type CompressFilesRequest = {
+export interface CompressFilesRequest {
   paths: string[];
   to: string;
 }

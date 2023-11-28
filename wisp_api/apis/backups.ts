@@ -3,32 +3,6 @@ import type { PaginationData } from "./index";
 import type { DownloadFileResponse } from "./filesystem";
 
 /**
- * The Backup attributes
- *
- *
- * @param uuid The UUID
- * @param uuid_short The short-form UUID
- * @param name The name
- * @param sha256_hash The hash of the backup. May not be present if it's still being created
- * @param bytes The size of the Backup, in bytes
- * @param locked Whether or not the Backup is locked
- * @param creating Whether or not the Backup is still being created
- * @param created_at A Timestamp indicating when the backup was created
- *
- * @internal
- */
-export type BackupAttributes = {
-    uuid: string;
-    uuid_short: string;
-    name: string;
-    sha256_hash: string | null;
-    bytes: number;
-    locked: boolean;
-    creating: boolean;
-    created_at: string;
-}
-
-/**
  * A Backup Object
  * @example
  * ```json
@@ -49,9 +23,19 @@ export type BackupAttributes = {
  *
  * @internal
  */
-export type Backup = {
+export interface Backup {
     object: "backup";
-    attributes: BackupAttributes;
+    attributes: {
+        uuid: string;
+        uuid_short: string;
+        name: string;
+        /** The hash of the Backup. May be null if the Backup is still being created. */
+        sha256_hash: string | null;
+        bytes: number;
+        locked: boolean;
+        creating: boolean;
+        created_at: string;
+    }
 }
 
 /**
@@ -62,7 +46,7 @@ export type Backup = {
  *
  * @internal
  */
-export type GetBackupsResponse = {
+export interface GetBackupsResponse {
     object: "list";
     data: Backup[];
     meta: {
@@ -71,11 +55,11 @@ export type GetBackupsResponse = {
 }
 
 export type BackupErrorCode = "server.backups.creation_would_exceed_limit";
-export type BackupError = {
+export interface BackupError {
     code: BackupErrorCode;
     data: any;
 }
-export type CreateBackupFailure = {
+export interface CreateBackupFailure {
     errors: BackupError[] | undefined
 }
 export type CreateBackupResponse = Backup | CreateBackupFailure;

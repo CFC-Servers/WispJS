@@ -18,7 +18,7 @@ export type MonitorPermissionType = "server:monitor.read" | "server:monitor.upda
 export type ReinstallPermissionType = "server:reinstall.update";
 export type Permission = SupportPermissionType | ControlPermissionType | SubuserPermissionType | AllocationPermissionType | StartupPermissionType | DatabasePermissionType | FilePermissionType | SchedulePermissionType | BackupPermissionType | DetailsPermissionType | AuditPermissionType | FastDLPermissionType | ModPermissionType | MonitorPermissionType | ReinstallPermissionType;
 
-export type User = {
+export interface User {
   object: "user";
   attributes: {
     email: string;
@@ -28,7 +28,7 @@ export type User = {
   }
 }
 
-export type Subuser = {
+export interface Subuser {
   object: "server_subuser";
   attributes: {
     id: number;
@@ -41,7 +41,7 @@ export type Subuser = {
   }
 }
 
-export type GetSubusersResponse = {
+export interface GetSubusersResponse {
   object: "list";
   data: Subuser[];
   meta: {
@@ -49,7 +49,7 @@ export type GetSubusersResponse = {
   }
 }
 
-export type GetAllSubuserPermissionsResponse = {
+export interface GetAllSubuserPermissionsResponse {
   permissions: Permission[];
   assignable: Permission[];
 }

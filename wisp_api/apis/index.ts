@@ -1,6 +1,6 @@
 export type RequestTypes = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
-export type PaginationData = {
+export interface PaginationData {
   total: number;
   count: number;
   perPage: number;

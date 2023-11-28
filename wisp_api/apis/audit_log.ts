@@ -7,21 +7,16 @@ import type { PaginationData } from "./index";
  * @example
  * ```json
  * {
- *  "city_name": "Seattle",
- *  "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0",
- *  "country_name": "US",
- *  "country_iso_code": "US"
+ *    "city_name": "Seattle",
+ *    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0",
+ *    "country_name": "US",
+ *    "country_iso_code": "US"
  * }
  * ```
  *
- * @param city_name The name of the Device's City
- * @param user_agent The latest user agent used by the Device
- * @param country_name The country name of the Device
- * @param country_iso_code The country ISO code of the Device
- *
  * @internal
  */
-export type Device = {
+export interface Device {
   city_name: string;
   user_agent: string;
   country_name: string;
@@ -34,7 +29,7 @@ export type Device = {
  *
  * @internal
  */
-export type AuditLog = {
+export interface AuditLog {
   object: "audit_log";
   attributes: {
     action: string;
@@ -50,8 +45,10 @@ export type AuditLog = {
  *
  * @remarks
  * Used in {@link AuditLogsAPI.List}
+ *
+ * @public
  */
-export type GetAuditLogsResponse = {
+export interface GetAuditLogsResponse {
   object: "list";
   data: AuditLog[];
   meta: {
