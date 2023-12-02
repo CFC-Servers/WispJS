@@ -1,6 +1,5 @@
 import { WispAPI } from "./wisp_api.js";
 import { WispSocket } from "./wisp_socket.js";
-export { GitCloneResult, GitPullResult, FilesearchResults } from "./wisp_socket.js";
 export interface WispInterface {
     socket: WispSocket;
     api: WispAPI;

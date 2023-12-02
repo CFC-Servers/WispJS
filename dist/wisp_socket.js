@@ -1,4 +1,4 @@
-import { io } from "socket.io-client";
+import { WebsocketPool } from "./lib/websocket_pool.js";
 // TODO: Handle errors better
 // TODO: Allow for no ghToken
 // TODO: Don't require a logger
@@ -7,243 +7,228 @@ export class WispSocket {
         this.logger = logger;
         this.api = api;
         this.ghToken = ghToken;
-        this.url = "";
-        this.token = "";
+        this.consoleCallbacks = [];
     }
-    setDetails() {
-        return new Promise((resolve, reject) => {
-            this.api.getWebsocketDetails().then((websocketInfo) => {
-                this.url = websocketInfo.url.replace("us-phs-chi23.physgun.com:8080", "wispproxy.cfcservers.org");
-                this.token = websocketInfo.token;
-                this.logger.info(`Got Websocket Details`);
-                resolve();
-            }).catch((err) => {
-                this.logger.error(`Failed to get websocket details: ${err}`);
-                reject(err);
-            });
-        });
-    }
-    _connect() {
-        let reconnectDelay = 1;
-        return new Promise((resolve, reject) => {
-            let connectedFirst = false;
-            console.log("Connecting to WebSocket");
-            this.socket = io(this.url, {
-                forceNew: true,
-                transports: ["websocket"],
-                extraHeaders: {
-                    "Authorization": `Bearer ${this.token}`
-                },
-                addTrailingSlash: true
-            });
-            this.socket.on("connect", () => {
-                console.log("Connected to WebSocket");
-                this.socket.emit("auth", this.token);
-            });
-            this.socket.on("error", (reason) => {
-                console.error(`WebSocket error: ${reason}`);
-            });
-            this.socket.on("connect_error", (error) => {
-                console.error(`WebSocket Connect error: ${error.toString()}`);
-                if (!connectedFirst) {
-                    connectedFirst = true;
-                    reject();
-                }
-            });
-            this.socket.on("disconnect", (reason) => {
-                console.error(`Disconnected from WebSocket: ${reason}`);
-                if (reason === "io server disconnect") {
-                    console.error(`Server closed connection - retrying (delay: ${reconnectDelay})`);
-                    setTimeout(() => {
-                        reconnectDelay = reconnectDelay * 1.2;
-                        this.setDetails().then(() => {
-                            this.socket.connect();
-                        });
-                    }, reconnectDelay * 1000);
-                }
-            });
-            this.socket.on("auth_success", () => {
-                console.log("Auth success");
-                if (!connectedFirst) {
-                    connectedFirst = true;
-                    resolve();
-                }
-            });
-            setTimeout(() => {
-                if (!connectedFirst) {
-                    console.error("Socket didn't connect in time");
-                    reject();
-                }
-            }, 5000);
-            console.log("Sent socket.connect()");
-        });
+    async setDetails() {
+        try {
+            const websocketInfo = await this.api.getWebsocketDetails();
+            const url = websocketInfo.url.replace("us-phs-chi23.physgun.com:8080", "wispproxy.cfcservers.org");
+            const token = websocketInfo.token;
+            this.pool = new WebsocketPool(url, token);
+            this.logger.info(`Got Websocket Details. Pool created.`);
+        }
+        catch (e) {
+            this.logger.error(`Failed to get websocket details: ${e}`);
+            throw (e);
+        }
     }
     async connect() {
         await this.setDetails();
-        await this._connect();
     }
-    disconnect() {
-        return new Promise((resolve, reject) => {
-            let done = false;
-            this.socket.once("disconnect", () => {
-                if (!done) {
+    async disconnect() {
+        await this.pool.disconnect();
+    }
+    async filesearch(query) {
+        await this.pool.run((worker) => {
+            const socket = worker.socket;
+            const logger = worker.logger;
+            logger.log("Running filesearch:", query);
+            return new Promise((resolve, reject) => {
+                let done = false;
+                socket.once("filesearch-results", (data) => {
                     done = true;
-                    resolve();
-                }
+                    logger.log("Resolved filesearch:", query);
+                    resolve(data);
+                });
+                socket.emit("filesearch-start", query);
+                setTimeout(() => {
+                    if (!done) {
+                        socket.off("filesearch-results");
+                        logger.error("Rejected filesearch: 'Timeout'");
+                        reject();
+                    }
+                }, 5000);
             });
-            this.socket.disconnect();
-            setTimeout(() => {
-                if (!done) {
-                    console.error("Socket didn't disconnect in time");
-                    done = true;
-                    reject();
-                }
-            }, 5000);
         });
     }
-    filesearch(query) {
-        return new Promise((resolve, reject) => {
-            let done = false;
-            this.socket.once("filesearch-results", (data) => {
-                done = true;
-                resolve(data);
-            });
-            this.socket.emit("filesearch-start", query);
-            setTimeout(() => {
-                if (!done) {
-                    reject();
-                }
-            }, 10000);
-        });
-    }
-    gitPull(dir) {
-        return new Promise((resolve, reject) => {
-            let isPrivate = false;
-            const finished = (success, output) => {
-                this.socket.removeAllListeners("git-pull");
-                this.socket.removeAllListeners("git-error");
-                this.socket.removeAllListeners("git-success");
-                const result = {
-                    output: output,
-                    isPrivate: isPrivate
-                };
-                if (success) {
-                    resolve(result);
-                }
-                else {
-                    reject(output);
-                }
-            };
-            const sendRequest = (includeAuth = false) => {
-                const data = { dir: dir };
-                if (includeAuth) {
-                    isPrivate = true;
-                    data.authkey = this.ghToken;
-                }
-                this.socket.emit("git-pull", data);
-            };
-            this.socket.once("git-pull", (data) => {
-                this.logger.info(`Updating ${data}`);
-            });
-            this.socket.once("git-success", (commit) => {
-                this.logger.info(`Addon updated to ${commit}`);
-                if (!commit) {
-                    this.logger.info("No commit given!");
-                }
-                finished(true, commit || "");
-            });
-            this.socket.on("git-error", (message) => {
-                if (message === "Remote authentication required but no callback set") {
-                    this.logger.info(`Remote authentication required, trying again with authkey: ${dir}`);
-                    sendRequest(true);
-                }
-                else {
-                    this.logger.error(`Error updating addon: ${message}`);
-                    finished(false, message);
-                }
-            });
-            sendRequest();
-        });
-    }
-    gitClone(url, dir, branch) {
-        return new Promise((resolve, reject) => {
-            let isPrivate = false;
-            const finished = (success, message) => {
-                this.socket.removeAllListeners("git-clone");
-                this.socket.removeAllListeners("git-error");
-                this.socket.removeAllListeners("git-success");
-                if (success) {
+    async gitPull(dir) {
+        await this.pool.run((worker) => {
+            const socket = worker.socket;
+            const logger = worker.logger;
+            logger.log("Running gitPull:", dir);
+            return new Promise((resolve, reject) => {
+                let isPrivate = false;
+                const finished = (success, output) => {
+                    socket.removeAllListeners("git-pull");
+                    socket.removeAllListeners("git-error");
+                    socket.removeAllListeners("git-success");
                     const result = {
+                        output: output,
                         isPrivate: isPrivate
                     };
-                    resolve(result);
-                }
-                else {
-                    reject(message);
-                }
-            };
-            const sendRequest = (includeAuth = false) => {
-                const data = { dir: dir, url: url, branch: branch };
-                if (includeAuth) {
-                    isPrivate = true;
-                    data.authkey = this.ghToken;
-                }
-                this.socket.emit("git-clone", data);
-            };
-            this.socket.once("git-clone", (data) => {
-                this.logger.info(`Cloning ${data}`);
-            });
-            this.socket.once("git-success", () => {
-                this.logger.info("Project successfully cloned");
-                finished(true);
-            });
-            this.socket.on("git-error", (message) => {
-                if (message === "Remote authentication required but no callback set") {
-                    this.logger.info(`Remote authentication required, trying again with authkey: ${dir}`);
-                    sendRequest(true);
-                }
-                else {
-                    this.logger.info(`Error cloning repo: ${message}`);
-                    finished(false, message);
-                }
-            });
-            sendRequest();
-        });
-    }
-    // TODO: Should we maintain or own listener chain?
-    // TODO: Create a way to remove listeners
-    addConsoleListener(callback) {
-        this.socket.on("console", (data) => {
-            callback(data.line);
-        });
-    }
-    sendCommandNonce(nonce, command, timeout = 1000) {
-        return new Promise((resolve, reject) => {
-            let timeoutObj;
-            let callback;
-            let output = "";
-            callback = (data) => {
-                const line = data.line;
-                if (line.startsWith(nonce)) {
-                    const message = line.slice(nonce.length);
-                    if (message === "Done.") {
-                        this.socket.off("console", callback);
-                        clearTimeout(timeoutObj);
-                        resolve(output);
+                    if (success) {
+                        logger.log("Resolved gitPull:", dir, output);
+                        resolve(result);
                     }
                     else {
-                        output += message;
-                        timeoutObj.refresh();
+                        logger.error("Rejected gitPull:", dir, output);
+                        reject(output);
                     }
-                }
-            };
-            this.socket.on("console", callback);
-            this.socket.emit("send command", command);
-            timeoutObj = setTimeout(() => {
-                console.error("Command timed out current output: ", output);
-                this.socket.off("console", callback);
-                reject("Timeout");
-            }, timeout);
+                };
+                const sendRequest = (includeAuth = false) => {
+                    const data = { dir: dir };
+                    if (includeAuth) {
+                        isPrivate = true;
+                        data.authkey = this.ghToken;
+                    }
+                    socket.emit("git-pull", data);
+                };
+                socket.once("git-pull", (data) => {
+                    logger.log(`Updating ${data}`);
+                });
+                socket.once("git-success", (commit) => {
+                    logger.log(`Addon updated to ${commit}`);
+                    if (!commit) {
+                        logger.log("No commit given!");
+                    }
+                    finished(true, commit || "");
+                });
+                socket.on("git-error", (message) => {
+                    if (message === "Remote authentication required but no callback set") {
+                        logger.log(`Remote authentication required, trying again with authkey: ${dir}`);
+                        sendRequest(true);
+                    }
+                    else {
+                        logger.log(`Error updating addon: ${message}`);
+                        finished(false, message);
+                    }
+                });
+                sendRequest();
+            });
+        });
+    }
+    async gitClone(url, dir, branch) {
+        await this.pool.run((worker) => {
+            const socket = worker.socket;
+            const logger = worker.logger;
+            logger.log("Running gitClone:", url, dir, branch);
+            return new Promise((resolve, reject) => {
+                let isPrivate = false;
+                const finished = (success, message) => {
+                    socket.removeAllListeners("git-clone");
+                    socket.removeAllListeners("git-error");
+                    socket.removeAllListeners("git-success");
+                    if (success) {
+                        const result = {
+                            isPrivate: isPrivate
+                        };
+                        logger.log("Resolved gitClone:", url, dir, branch, message);
+                        resolve(result);
+                    }
+                    else {
+                        logger.error("Rejected gitClone:", url, dir, branch, message);
+                        reject(message);
+                    }
+                };
+                const sendRequest = (includeAuth = false) => {
+                    const data = { dir: dir, url: url, branch: branch };
+                    if (includeAuth) {
+                        isPrivate = true;
+                        data.authkey = this.ghToken;
+                    }
+                    socket.emit("git-clone", data);
+                };
+                socket.once("git-clone", (data) => {
+                    logger.log(`Cloning ${data}`);
+                });
+                socket.once("git-success", () => {
+                    logger.log("Project successfully cloned");
+                    finished(true);
+                });
+                socket.on("git-error", (message) => {
+                    if (message === "Remote authentication required but no callback set") {
+                        logger.log(`Remote authentication required, trying again with authkey: ${dir}`);
+                        sendRequest(true);
+                    }
+                    else {
+                        logger.log("Error cloning repo:", url, dir, branch, message);
+                        finished(false, message);
+                    }
+                });
+                sendRequest();
+            });
+        });
+    }
+    setupConsoleListener() {
+        this.pool.run((worker) => {
+            const logger = worker.logger;
+            logger.log("Running setupConsoleListener");
+            return new Promise((resolve) => {
+                worker.socket.on("console", (data) => {
+                    const line = data.line;
+                    if (this.consoleCallbacks.length == 0) {
+                        logger.log("Resolved setupConsoleListener (no more callbacks)");
+                        return resolve();
+                    }
+                    this.consoleCallbacks.forEach((callback) => {
+                        try {
+                            callback(line);
+                        }
+                        catch (e) {
+                            logger.error("Failed to run console callback", e);
+                        }
+                    });
+                });
+            });
+        });
+    }
+    addConsoleListener(callback) {
+        if (this.consoleCallbacks.length == 0) {
+            this.setupConsoleListener();
+        }
+        this.consoleCallbacks.push(callback);
+    }
+    removeConsoleListener(callback) {
+        const index = this.consoleCallbacks.indexOf(callback);
+        if (index == -1) {
+            return;
+        }
+        this.consoleCallbacks.splice(index, 1);
+    }
+    async sendCommandNonce(nonce, command, timeout = 1000) {
+        return await this.pool.run((worker) => {
+            const socket = worker.socket;
+            const logger = worker.logger;
+            logger.log("Running sendCommandNonce: ", nonce, command);
+            return new Promise((resolve, reject) => {
+                let timeoutObj;
+                let callback;
+                let output = "";
+                callback = (data) => {
+                    const line = data.line;
+                    if (line.startsWith(nonce)) {
+                        const message = line.slice(nonce.length);
+                        if (message === "Done.") {
+                            socket.off("console", callback);
+                            clearTimeout(timeoutObj);
+                            logger.log("Resolved sendCommandNonce", nonce, command);
+                            resolve(output);
+                        }
+                        else {
+                            output += message;
+                            timeoutObj.refresh();
+                        }
+                    }
+                };
+                socket.on("console", callback);
+                socket.emit("send command", command);
+                timeoutObj = setTimeout(() => {
+                    logger.error(`Command timed out current output: '${output}'`);
+                    socket.off("console", callback);
+                    logger.log("Rejected sendCommandNonce 'Timeout'", nonce, command);
+                    reject("Timeout");
+                }, timeout);
+            });
         });
     }
 }
