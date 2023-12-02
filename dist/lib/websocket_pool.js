@@ -1,11 +1,16 @@
-import { Manager } from "socket.io-client";
+import { io, Manager } from "socket.io-client";
 class PoolWorker {
     constructor(pool) {
         this.pool = pool;
         this.ready = false;
         this.idx = pool.workers.length;
         this.token = pool.token;
-        this.socket = pool.manager.socket("/");
+        this.socket = io(pool.url, {
+            forceNew: true,
+            transports: ["websocket"],
+            addTrailingSlash: true,
+            autoConnect: false
+        });
         const logPrefix = `[Worker #${this.idx}]`;
         this.logger = {
             log: (...args) => console.log(logPrefix, args),
@@ -18,10 +23,13 @@ class PoolWorker {
     connect() {
         const socket = this.socket;
         const logger = this.logger;
+        socket.onAnyOutgoing(this.logger.log);
+        logger.log("Connecting to websocket...");
         return new Promise((resolve, reject) => {
             let connectedOnce = false;
             socket.on("connect", () => {
                 logger.log("Connected to WebSocket");
+                logger.log("Emitting:", "auth", this.token);
                 socket.emit("auth", this.token);
             });
             socket.on("error", (reason) => {
@@ -31,7 +39,7 @@ class PoolWorker {
                 logger.error(`WebSocket Connect error: ${error.toString()}`);
                 if (!connectedOnce) {
                     connectedOnce = true;
-                    reject();
+                    reject(`Connection error: ${error.toString()}`);
                 }
             });
             socket.on("disconnect", (reason) => {
@@ -45,12 +53,18 @@ class PoolWorker {
                     resolve();
                 }
             });
+            socket.on("initial status", (data) => {
+                logger.log("Initial Status");
+                console.log(JSON.stringify(data));
+            });
             setTimeout(() => {
                 if (!connectedOnce) {
                     logger.error("Socket didn't connect in time");
-                    reject();
+                    reject("Connection Timeout");
                 }
             }, 10000);
+            logger.log("Starting connection");
+            socket.connect();
         });
     }
     disconnect() {
@@ -75,6 +89,7 @@ class PoolWorker {
     }
     async run(work) {
         this.ready = false;
+        this.logger.log("Trying to run work(this)");
         try {
             return await work(this);
         }
@@ -83,6 +98,7 @@ class PoolWorker {
             throw e;
         }
         finally {
+            this.logger.error("Work complete, marking self as ready");
             this.ready = true;
             this.pool.processQueue();
         }
@@ -92,18 +108,17 @@ export class WebsocketPool {
     constructor(url, token) {
         this.maxWorkers = 5;
         this.token = token;
+        this.url = url;
         this.manager = new Manager(url, {
             forceNew: true,
-            reconnectionAttempts: 3,
-            reconnectionDelayMax: 3000,
-            reconnectionDelay: 500,
-            timeout: 3000,
-            transports: ["websocket"]
+            transports: ["websocket"],
+            addTrailingSlash: true,
         });
         this.workers = [];
         this.queue = [];
     }
     async createWorker() {
+        console.log("Creating a new Pool worker");
         const worker = new PoolWorker(this);
         this.workers.push(worker);
         await worker.connect();
@@ -113,38 +128,44 @@ export class WebsocketPool {
         await Promise.all(this.workers.map((worker) => worker.disconnect()));
     }
     async processQueue() {
-        if (this.queue.length > 0) {
+        console.log("Processing Pool queue");
+        if (this.queue.length == 0) {
             return;
         }
         const work = this.queue.shift();
         if (!work) {
             return;
         }
+        let worker;
         if (this.workers.length == 0) {
-            await this.createWorker();
+            worker = await this.createWorker();
         }
-        let worker = this.workers.find((worker) => worker.available());
+        worker = worker || this.workers.find((worker) => worker.available());
         if (!worker) {
             if (this.workers.length < this.maxWorkers) {
+                console.log("No free worker, making a new one..");
                 worker = await this.createWorker();
             }
             else {
                 return;
             }
         }
-        await worker.run(work);
+        return await worker.run(work);
     }
     async run(work) {
         return new Promise(async (resolve, reject) => {
             this.queue.push(async (worker) => {
                 try {
-                    resolve(await work(worker));
+                    worker.logger.log("Running await work(worker)");
+                    const result = await work(worker);
+                    resolve(result);
                 }
                 catch (e) {
+                    worker.logger.error("Failed to run a job!");
                     reject(e);
                 }
             });
-            this.processQueue();
+            return this.processQueue();
         });
     }
 }

@@ -10,12 +10,8 @@ export interface WispInterface {
 export class WispInterface {
   constructor(domain: string, uuid: string, token: string) {
     this.logger = {
-      info: (msg: any) => {
-        console.log(msg);
-      },
-      error: (msg: string) => {
-        console.error(msg);
-      }
+      info: console.log,
+      error: console.error
     };
 
     this.api = new WispAPI(domain, uuid, token, this.logger);

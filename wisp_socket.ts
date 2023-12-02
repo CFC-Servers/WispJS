@@ -3,6 +3,8 @@ import { ConsoleMessage, FilesearchResults } from "./lib/websocket_pool";
 import { GitPullData, GitPullResult } from "./lib/websocket_pool.js";
 import { GitCloneData, GitCloneResult } from "./lib/websocket_pool.js";
 
+export { GitPullResult, GitCloneResult }
+
 export interface WispSocket {
     pool: WebsocketPool;
     logger: any;
@@ -30,10 +32,11 @@ export class WispSocket {
     async setDetails() {
         try {
             const websocketInfo: WebsocketInfo = await this.api.getWebsocketDetails()
-            const url = websocketInfo.url.replace("us-phs-chi23.physgun.com:8080", "wispproxy.cfcservers.org")
+            // const url = websocketInfo.url.replace("us-phs-chi23.physgun.com:8080", "wispproxy.cfcservers.org")
+            const url = websocketInfo.url
             const token = websocketInfo.token
             this.pool = new WebsocketPool(url, token)
-            this.logger.info(`Got Websocket Details. Pool created.`)
+            this.logger.info(`Got Websocket Details. Pool created.`, url, token)
         } catch(e) {
             this.logger.error(`Failed to get websocket details: ${e}`)
             throw(e)
@@ -49,10 +52,12 @@ export class WispSocket {
     }
 
     async filesearch(query: string) {
-        await this.pool.run((worker) => {
-            const socket = worker.socket;
-            const logger = worker.logger;
-            logger.log("Running filesearch:", query);
+        this.logger.info("Running filesearch with: ", query)
+
+        return await this.pool.run((worker) => {
+            const socket = worker.socket
+            const logger = worker.logger
+            logger.log("Running filesearch:", query)
 
             return new Promise<FilesearchResults>((resolve, reject) => {
                 let done = false
@@ -72,12 +77,12 @@ export class WispSocket {
                         reject()
                     }
                 }, 5000)
-            });
-        });
+            })
+        })
     }
 
-    async gitPull(dir: string) {
-        await this.pool.run((worker) => {
+    async gitPull(dir: string, useAuth: boolean = false) {
+        const pullResult = await this.pool.run((worker) => {
             const socket = worker.socket;
             const logger = worker.logger;
             logger.log("Running gitPull:", dir);
@@ -139,13 +144,16 @@ export class WispSocket {
                     }
                 })
 
-                sendRequest()
+                sendRequest(useAuth)
             })
         })
+
+        console.log("Returning pullResult")
+        return pullResult
     }
 
     async gitClone(url: string, dir: string, branch: string) {
-        await this.pool.run((worker) => {
+        return await this.pool.run((worker) => {
             const socket = worker.socket;
             const logger = worker.logger;
             logger.log("Running gitClone:", url, dir, branch);

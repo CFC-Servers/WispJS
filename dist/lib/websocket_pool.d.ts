@@ -8,6 +8,7 @@ interface ServerToClientEvents {
     "git-clone": (data: GitCloneData) => void;
     "git-pull": (data: GitPullData) => void;
     "console": (message: ConsoleMessage) => void;
+    "initial status": (message: any) => void;
 }
 interface ClientToServerEvents {
     "auth": (token: string) => void;
@@ -73,6 +74,7 @@ export interface WebsocketPool {
     manager: WispWebsocketManager;
     workers: PoolWorker[];
     token: string;
+    url: string;
     maxWorkers: number;
     queue: ((worker: PoolWorker) => Promise<any>)[];
 }
@@ -80,7 +82,7 @@ export declare class WebsocketPool {
     constructor(url: string, token: string);
     createWorker(): Promise<PoolWorker>;
     disconnect(): Promise<void>;
-    processQueue(): Promise<void>;
+    processQueue(): Promise<any>;
     run(work: (worker: PoolWorker) => Promise<any>): Promise<any>;
 }
 export {};

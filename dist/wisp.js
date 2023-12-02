@@ -3,12 +3,8 @@ import { WispSocket } from "./wisp_socket.js";
 export class WispInterface {
     constructor(domain, uuid, token) {
         this.logger = {
-            info: (msg) => {
-                console.log(msg);
-            },
-            error: (msg) => {
-                console.error(msg);
-            }
+            info: console.log,
+            error: console.error
         };
         this.api = new WispAPI(domain, uuid, token, this.logger);
     }

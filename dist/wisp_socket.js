@@ -12,10 +12,11 @@ export class WispSocket {
     async setDetails() {
         try {
             const websocketInfo = await this.api.getWebsocketDetails();
-            const url = websocketInfo.url.replace("us-phs-chi23.physgun.com:8080", "wispproxy.cfcservers.org");
+            // const url = websocketInfo.url.replace("us-phs-chi23.physgun.com:8080", "wispproxy.cfcservers.org")
+            const url = websocketInfo.url;
             const token = websocketInfo.token;
             this.pool = new WebsocketPool(url, token);
-            this.logger.info(`Got Websocket Details. Pool created.`);
+            this.logger.info(`Got Websocket Details. Pool created.`, url, token);
         }
         catch (e) {
             this.logger.error(`Failed to get websocket details: ${e}`);
@@ -29,7 +30,8 @@ export class WispSocket {
         await this.pool.disconnect();
     }
     async filesearch(query) {
-        await this.pool.run((worker) => {
+        this.logger.info("Running filesearch with: ", query);
+        return await this.pool.run((worker) => {
             const socket = worker.socket;
             const logger = worker.logger;
             logger.log("Running filesearch:", query);
@@ -51,8 +53,8 @@ export class WispSocket {
             });
         });
     }
-    async gitPull(dir) {
-        await this.pool.run((worker) => {
+    async gitPull(dir, useAuth = false) {
+        const pullResult = await this.pool.run((worker) => {
             const socket = worker.socket;
             const logger = worker.logger;
             logger.log("Running gitPull:", dir);
@@ -103,12 +105,14 @@ export class WispSocket {
                         finished(false, message);
                     }
                 });
-                sendRequest();
+                sendRequest(useAuth);
             });
         });
+        console.log("Returning pullResult");
+        return pullResult;
     }
     async gitClone(url, dir, branch) {
-        await this.pool.run((worker) => {
+        return await this.pool.run((worker) => {
             const socket = worker.socket;
             const logger = worker.logger;
             logger.log("Running gitClone:", url, dir, branch);
