@@ -64,7 +64,6 @@ export class WispSocket {
 
                 socket.once("filesearch-results", (data) => {
                     done = true
-                    logger.log("Resolved filesearch:", query);
                     resolve(data)
                 })
 
@@ -101,7 +100,6 @@ export class WispSocket {
                     }
 
                     if (success) {
-                        logger.log("Resolved gitPull:", dir, output);
                         resolve(result)
                     } else {
                         logger.error("Rejected gitPull:", dir, output);
@@ -148,7 +146,6 @@ export class WispSocket {
             })
         })
 
-        console.log("Returning pullResult")
         return pullResult
     }
 
@@ -172,7 +169,6 @@ export class WispSocket {
                             isPrivate: isPrivate
                         }
 
-                        logger.log("Resolved gitClone:", url, dir, branch, message);
                         resolve(result);
                     } else {
                         logger.error("Rejected gitClone:", url, dir, branch, message);
@@ -225,7 +221,6 @@ export class WispSocket {
                     const line = data.line;
 
                     if (this.consoleCallbacks.length == 0) {
-                        logger.log("Resolved setupConsoleListener (no more callbacks)");
                         return resolve();
                     }
 
@@ -277,7 +272,6 @@ export class WispSocket {
                             socket.off("console", callback)
                             clearTimeout(timeoutObj)
 
-                            logger.log("Resolved sendCommandNonce", nonce, command)
                             resolve(output)
                         } else {
                             output += message

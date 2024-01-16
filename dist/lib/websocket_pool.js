@@ -43,7 +43,7 @@ class PoolWorker {
                 }
             });
             socket.on("disconnect", (reason) => {
-                logger.error(`Disconnected from WebSocket: ${reason}`);
+                logger.log(`Disconnected from WebSocket: ${reason}`);
             });
             socket.on("auth_success", () => {
                 logger.log("Auth success");
@@ -53,17 +53,12 @@ class PoolWorker {
                     resolve();
                 }
             });
-            socket.on("initial status", (data) => {
-                logger.log("Initial Status");
-                console.log(JSON.stringify(data));
-            });
             setTimeout(() => {
                 if (!connectedOnce) {
                     logger.error("Socket didn't connect in time");
                     reject("Connection Timeout");
                 }
             }, 10000);
-            logger.log("Starting connection");
             socket.connect();
         });
     }
@@ -89,7 +84,6 @@ class PoolWorker {
     }
     async run(work) {
         this.ready = false;
-        this.logger.log("Trying to run work(this)");
         try {
             return await work(this);
         }
@@ -98,7 +92,6 @@ class PoolWorker {
             throw e;
         }
         finally {
-            this.logger.error("Work complete, marking self as ready");
             this.ready = true;
             this.pool.processQueue();
         }
@@ -128,7 +121,6 @@ export class WebsocketPool {
         await Promise.all(this.workers.map((worker) => worker.disconnect()));
     }
     async processQueue() {
-        console.log("Processing Pool queue");
         if (this.queue.length == 0) {
             return;
         }
@@ -143,7 +135,6 @@ export class WebsocketPool {
         worker = worker || this.workers.find((worker) => worker.available());
         if (!worker) {
             if (this.workers.length < this.maxWorkers) {
-                console.log("No free worker, making a new one..");
                 worker = await this.createWorker();
             }
             else {
@@ -156,7 +147,6 @@ export class WebsocketPool {
         return new Promise(async (resolve, reject) => {
             this.queue.push(async (worker) => {
                 try {
-                    worker.logger.log("Running await work(worker)");
                     const result = await work(worker);
                     resolve(result);
                 }

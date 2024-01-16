@@ -128,7 +128,7 @@ class PoolWorker {
             })
 
             socket.on("disconnect", (reason: string) => {
-                logger.error(`Disconnected from WebSocket: ${reason}`)
+                logger.log(`Disconnected from WebSocket: ${reason}`)
             })
 
             socket.on("auth_success", () => {
@@ -141,12 +141,6 @@ class PoolWorker {
                 }
             })
 
-            socket.on("initial status", (data: any) => {
-                logger.log("Initial Status")
-                console.log(JSON.stringify(data))
-            })
-
-
             setTimeout(() => {
                 if (!connectedOnce) {
                     logger.error("Socket didn't connect in time")
@@ -154,7 +148,6 @@ class PoolWorker {
                 }
             }, 10000)
 
-            logger.log("Starting connection")
             socket.connect()
         });
     }
@@ -187,15 +180,12 @@ class PoolWorker {
     async run(work: (worker: PoolWorker) => Promise<any>) {
         this.ready = false;
 
-        this.logger.log("Trying to run work(this)")
-
         try {
             return await work(this);
         } catch (e) {
             this.logger.error(e);
             throw e;
         } finally {
-            this.logger.error("Work complete, marking self as ready");
             this.ready = true;
             this.pool.processQueue();
         }
@@ -241,7 +231,6 @@ export class WebsocketPool {
     }
 
     async processQueue() {
-        console.log("Processing Pool queue")
         if (this.queue.length == 0) { return }
 
         const work = this.queue.shift()
@@ -255,7 +244,6 @@ export class WebsocketPool {
         worker = worker || this.workers.find((worker) => worker.available())
         if (!worker) {
             if (this.workers.length < this.maxWorkers) {
-                console.log("No free worker, making a new one..")
                 worker = await this.createWorker()
             } else {
                 return
@@ -269,7 +257,6 @@ export class WebsocketPool {
         return new Promise(async (resolve, reject) => {
             this.queue.push(async (worker) => {
                 try {
-                    worker.logger.log("Running await work(worker)")
                     const result = await work(worker)
                     resolve(result)
                 } catch (e) {

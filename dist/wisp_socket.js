@@ -39,7 +39,6 @@ export class WispSocket {
                 let done = false;
                 socket.once("filesearch-results", (data) => {
                     done = true;
-                    logger.log("Resolved filesearch:", query);
                     resolve(data);
                 });
                 socket.emit("filesearch-start", query);
@@ -69,7 +68,6 @@ export class WispSocket {
                         isPrivate: isPrivate
                     };
                     if (success) {
-                        logger.log("Resolved gitPull:", dir, output);
                         resolve(result);
                     }
                     else {
@@ -108,7 +106,6 @@ export class WispSocket {
                 sendRequest(useAuth);
             });
         });
-        console.log("Returning pullResult");
         return pullResult;
     }
     async gitClone(url, dir, branch) {
@@ -126,7 +123,6 @@ export class WispSocket {
                         const result = {
                             isPrivate: isPrivate
                         };
-                        logger.log("Resolved gitClone:", url, dir, branch, message);
                         resolve(result);
                     }
                     else {
@@ -171,7 +167,6 @@ export class WispSocket {
                 worker.socket.on("console", (data) => {
                     const line = data.line;
                     if (this.consoleCallbacks.length == 0) {
-                        logger.log("Resolved setupConsoleListener (no more callbacks)");
                         return resolve();
                     }
                     this.consoleCallbacks.forEach((callback) => {
@@ -215,7 +210,6 @@ export class WispSocket {
                         if (message === "Done.") {
                             socket.off("console", callback);
                             clearTimeout(timeoutObj);
-                            logger.log("Resolved sendCommandNonce", nonce, command);
                             resolve(output);
                         }
                         else {
