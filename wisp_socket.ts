@@ -115,6 +115,7 @@ export class WispSocket {
             });
 
             this.socket.on("connect", () => {
+                reconnectDelay = 1;
                 console.log("Connected to WebSocket");
                 this.socket.emit("auth", this.token);
             });
