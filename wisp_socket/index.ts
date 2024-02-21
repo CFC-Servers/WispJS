@@ -178,7 +178,7 @@ export class WispSocket {
      */
     setDetails() {
         return new Promise<void>((resolve, reject) => {
-            this.api.getWebsocketDetails().then((websocketInfo: WebsocketInfo) => {
+            this.api.Servers.GetWebsocketDetails().then((websocketInfo: WebsocketInfo) => {
                 if (this._websocketDetailsPreprocessor) {
                     this._websocketDetailsPreprocessor(websocketInfo);
                 }
