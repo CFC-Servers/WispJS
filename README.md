@@ -42,7 +42,7 @@ _(while logged in)_ and generate a new Token.
 
 In general, your WispJS code will start like this:
 ```js
-import { WispInterface } from "wispjs"
+import { WispInterface } from "@cfc-servers/wispjs"
 
 const domain = "<your.wisp.domain>"
 
@@ -65,7 +65,7 @@ For almost everything else in the Wisp panel, you use the HTTP API. Databases, s
 
 In WispJS, you access each of these as you might expect:
 ```js
-import { WispInterface } from "wispjs"
+import { WispInterface } from "@cfc-servers/wispjs"
 
 ...
 
