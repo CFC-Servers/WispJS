@@ -25,7 +25,7 @@ Everything you normally do in your Wisp panel is fully replicable using this lib
 
 ## Installation
 ```
-npm i @cfc-servers/wispjs
+npm i @cfc-servers/wispjs@v2
 ```
 
 ## Usage
