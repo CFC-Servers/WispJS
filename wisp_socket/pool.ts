@@ -1,6 +1,11 @@
 import { io, Socket, Manager } from "socket.io-client";
 
-interface ServerToClientEvents {
+/**
+ * The struct used to define the events that can be sent from the server to the client
+ *
+ * @internal
+ */
+export interface ServerToClientEvents {
     "error": (message: string) => void;
     "auth_success": (message: string) => void;
     "filesearch-results": (data: FilesearchResults) => void;
@@ -13,7 +18,12 @@ interface ServerToClientEvents {
 }
 
 
-interface ClientToServerEvents {
+/**
+ * The struct used to define the events that can be sent from the client to the server
+ *
+ * @internal
+ */
+export interface ClientToServerEvents {
     "auth": (token: string) => void;
     "filesearch-start": (query: string) => void;
     "git-clone": (data: GitCloneData) => void;
@@ -102,7 +112,7 @@ export interface GitPullResult {
  *
  * @internal
  */
-interface FilesearchFile {
+export interface FilesearchFile {
     results: number;
     lines: {[key: string]: string};
 }
@@ -122,7 +132,17 @@ export interface FilesearchResults {
 }
 
 
+/**
+ * The events that can be sent from the server to the client
+ * @internal
+ */
 export type WispWebsocket = Socket<ServerToClientEvents, ClientToServerEvents>;
+
+
+/**
+ * The events that can be sent from the client to the server
+ * @internal
+ */
 export type WispWebsocketManager = Manager<ServerToClientEvents, ClientToServerEvents>;
 
 
@@ -273,6 +293,10 @@ class PoolWorker {
     }
 }
 
+
+/**
+ * Struct used to manage a pool of WebSocket workers
+ */
 export interface WebsocketPool {
     manager: WispWebsocketManager;
     workers: PoolWorker[];

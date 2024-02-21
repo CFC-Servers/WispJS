@@ -12,7 +12,7 @@ import { GitCloneData, GitCloneResult } from "./pool.js";
  *
  * @internal
  */
-interface WebsocketInfo {
+export interface WebsocketInfo {
     token: string;
     url: string;
 }
