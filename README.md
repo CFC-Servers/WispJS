@@ -20,6 +20,8 @@ Everything you normally do in your Wisp panel is fully replicable using this lib
 
 ## How do I use this?
 
+(Full docs available at: https://docs.wispjs.com)
+
 It depends on what you want to do.
 
 For essentially all use-cases, though, you will need a Wisp API Token.
