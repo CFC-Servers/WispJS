@@ -23,19 +23,15 @@ Well.. anything!
 
 Everything you normally do in your Wisp panel is fully replicable using this library.
 
-
-## How do I use this?
-
-(Full docs available at: https://docs.wispjs.com)
-
-**Installation:**
+## Installation
 ```
 npm i @cfc-servers/wispjs
 ```
 
-It depends on what you want to do.
+## Usage
+_(Full docs available at: https://docs.wispjs.com)_
 
-For essentially all use-cases, though, you will need a Wisp API Token.
+For essentially all use-cases, you will need a Wisp API Token.
 To generate one, visit:
 ```
 https://<your.wisp.domain>/account/security
@@ -43,8 +39,6 @@ https://<your.wisp.domain>/account/security
 _(while logged in)_ and generate a new Token.
 
 <br>
-
-_(This tool was made for developers, so I assume you're one too!)_
 
 In general, your WispJS code will start like this:
 ```js
@@ -132,16 +126,16 @@ Please consult the docs for types, parameters, and everything you'd need to actu
  - `disconnect`
 
 ### WispInterface.api.Allocations
-Manage all IP allocations
+_Manage all IP allocations_
  - `List`
  - `Update`
 
 ### WispInterface.api.AuditLogs
-Used to review Audit Logs
+_Used to review Audit Logs_
  - `List`
 
 ### WispInterface.api.Backups
-Manage Server backups
+_Manage Server backups_
  - `List`
  - `Create`
  - `ToggleLock`
@@ -150,17 +144,17 @@ Manage Server backups
  - `Delete`
 
 ### WispInterface.api.Databases
-Manage Databases
+_Manage Databases_
  - `List`
  - `Delete`
  - `RotatePassword`
 
 ### WispInterface.api.FastDL
-Sync FastDL for a Server
+_Sync FastDL for a Server_
  - `Sync`
 
 ### WispInterface.api.Filesystem
-Interact with the Filesystem
+_Interact with the Filesystem_
  - `GetDirectoryContents`
  - `CreateDirectory`
  - `ReadFile`
@@ -173,12 +167,12 @@ Interact with the Filesystem
  - `DecompressFile`
 
 ### WispInterface.api.Mods
-Use the "Mods" feature
+_Use the "Mods" feature_
  - `List`
  - `ToggleInstall`
 
 ### WispInterface.api.Schedules
-Manage Schedules
+_Manage Schedules_
  - `List`
  - `GetDetails`
  - `Create`
@@ -190,7 +184,7 @@ Manage Schedules
  - `DeleteTask`
 
 ### WispInterface.api.Servers
-A set of functions to manage a specific server
+_A set of functions to manage a specific server_
  - `SendCommand`
  - `GetWebsocketDetails`
  - `SetName`
@@ -199,12 +193,12 @@ A set of functions to manage a specific server
  - `PowerRequest`
 
 ### WispInterface.api.Startup
-Get and adjust server Startup params _(default map, tickrate, etc.)_
+_Get and adjust server Startup params (default map, tickrate, etc.)_
  - `Get`
  - `Update`
 
 ### WispInterface.api.Subusers
-Create, List, Update, Delete Subusers
+_Create, List, Update, Delete Subusers_
  - `List`
  - `GetDetails`
  - `GetAllPermissions`
@@ -213,7 +207,7 @@ Create, List, Update, Delete Subusers
  - `Delete`
 
 ### WispInterface.socket
-Interact with the realtime websocket for a Server
+_Interact with the realtime websocket for a Server_
  - `setWebsocketDetailsPreprocessor`
     - Allows you to modify the reeturned websocket details (i.e. for setting up a proxy)
  - `filesearch`
