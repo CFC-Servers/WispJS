@@ -55,8 +55,10 @@ jobs:
 
       - name: Publish Docs
         run: |
-          rm -rf wisp_api wisp_socket .gitignore package-lock.json package.json README.md tsconfig.json wisp.ts wrangler.toml .github
+          cp -R docs ../docs_wip
+          rm -rf ./* ,/.*
 
-          git add ./docs
+          mv ../docs_wip docs
+          git add .
           git commit -m "Update Docs for version: ${{ inputs.version_tag }}"
           git push --force origin HEAD:docs
