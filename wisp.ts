@@ -36,11 +36,11 @@ export class WispInterface {
    * @remarks
    * ℹ️  `this.socket` is available only after calling this function.
    *
-   * @param ghPAT The Github Personal Access Token used for Cloning/Pulling of private repositories
+   * @param ghPAT The Github Personal Access Token used for Cloning/Pulling of private repositories. This may be omitted if you do not need to interact with private repositories
    *
    * @public
    */
-  async connect(ghPAT: string) {
+  async connect(ghPAT: string | undefined) {
     this.socket = new WispSocket(this.logger, this.api, ghPAT);
     await this.socket.connect();
   }

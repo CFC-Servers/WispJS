@@ -6,8 +6,6 @@
   "main": "dist/wisp.js",
   "types": "dist/wisp.d.ts",
   "scripts": {
-    "test": "tsc && node dist/test.js",
-    "test-debug": "tsc && DEBUG=* node dist/test.js",
     "build": "tsc",
     "build-docs": "typedoc wisp.ts wisp_api/index.ts wisp_socket/index.ts wisp_api/apis/*"
   },

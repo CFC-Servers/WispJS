@@ -26,7 +26,7 @@ export interface WispSocket {
     pool: WebsocketPool;
     logger: any;
     api: any;
-    ghToken: string;
+    ghToken: string | undefined;
     consoleCallbacks: ((message: string) => void)[];
     _websocketDetailsPreprocessor: WebsocketDetailsPreprocessor | undefined;
 }
@@ -38,7 +38,7 @@ export interface WispSocket {
  * @internal
  */
 export class WispSocket {
-    constructor(logger: any, api: any, ghToken: string) {
+    constructor(logger: any, api: any, ghToken: string | undefined) {
         this.logger = logger
         this.api = api
         this.ghToken = ghToken
@@ -187,6 +187,11 @@ export class WispSocket {
                     const data: GitPullData = { dir: dir }
 
                     if (includeAuth) {
+                        if (!this.ghToken) {
+                            logger.error("No GitHub token set, can't authenticate")
+                            return finished(false, "Authentication is required, but no GitHub token was set. Can't pull!")
+                        }
+
                         isPrivate = true
                         data.authkey = this.ghToken
                     }
@@ -265,6 +270,11 @@ export class WispSocket {
                     const data: GitCloneData = { dir: dir, url: url, branch: branch };
 
                     if (includeAuth) {
+                        if (!this.ghToken) {
+                            logger.error("No GitHub token set, can't authenticate")
+                            return finished(false, "Authentication is required, but no GitHub token was set. Can't clone!")
+                        }
+
                         isPrivate = true;
                         data.authkey = this.ghToken;
                     }
