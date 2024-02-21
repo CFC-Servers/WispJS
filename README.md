@@ -12,6 +12,11 @@ We also added a lot of documentation _(i.e. response codes, special notes about 
 
 We're always looking for notes about what this does/doesn't work for! Please leave a note in a Discussion or Issue if you learn something
 
+## What can I do with this?
+Well.. anything!
+
+Everything you normally do in your Wisp panel is fully replicable using this library.
+
 
 ## How do I use this?
 
