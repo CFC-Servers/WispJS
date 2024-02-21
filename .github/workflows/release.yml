@@ -30,6 +30,18 @@ jobs:
         run: |
           npm run build
 
+      - name: Generate Docs
+        run: |
+          npm run build-docs
+          mv docs ../docs_wip
+
+      - name: Remove Non-distributables
+        run: |
+          rm .gitignore
+          rm tsconfig.json
+          rm wisp.ts
+          rm -rf wisp_api wisp_socket .github
+
       - name: Publish
         uses: JS-DevTools/npm-publish@v3
         with:
@@ -47,13 +59,11 @@ jobs:
             git push --force-with-lease origin main || \
             echo "Version tag unchanaged"
 
-      - name: Generate Docs
-        run: |
-          npm run build-docs
+          git tag "${{ inputs.version_tag }}"
+          git push --tags
 
       - name: Publish Docs
         run: |
-          cp -R docs ../docs_wip
           rm -rf ./* ,/.*
 
           mv ../docs_wip docs
