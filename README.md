@@ -28,6 +28,11 @@ Everything you normally do in your Wisp panel is fully replicable using this lib
 
 (Full docs available at: https://docs.wispjs.com)
 
+**Installation:**
+```
+npm i @cfc-servers/wispjs
+```
+
 It depends on what you want to do.
 
 For essentially all use-cases, though, you will need a Wisp API Token.
