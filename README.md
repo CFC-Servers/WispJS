@@ -119,7 +119,7 @@ You can make multiple WispInterface instances to manage multiple servers, or cha
 
 ## API
 This is a general rundown of the functions you can use.
-Please consult the docs for types, parameters, and everything you'd need to actually use them.
+Please consult [the docs](https://docs.wispjs.com/) for types, parameters, and everything you'd need to actually use them.
 
 ### WispInterface
  - `connect`
