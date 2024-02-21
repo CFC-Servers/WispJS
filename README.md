@@ -109,6 +109,15 @@ You can make multiple WispInterface instances to manage multiple servers, or cha
 })()
 ```
 
+### Cloud Hosting
+This library runs just fine on GitHub Actions, Cloudflare Workers, and I'm sure many others.
+
+#### Special note about Cloudflare Workers
+Almost all Wisp Websockets are hosted on a different port, usually `:8080`. Cloudflare doesn't allow us to make requests to nonstandard HTTP ports.
+
+At CFC, we host a dead-simple Nginx instance that proxies the requests through our dedicated server.
+If you get stuck on this, please make an Issue and we'll try to provide a more robust solution.
+
 <br>
 
 ## API
