@@ -1,8 +1,8 @@
 # WispJS
 <p align="left">
-    <a href="https://discord.gg/5JUqZjzmYJ" alt="Discord Invite"><img target="_blank" src="https://img.shields.io/discord/981394195812085770?label=Support&logo=discord&logoColor=white" /></a>
-    <a href="https://www.npmjs.com/package/@cfc-servers/wispjs" alt="NPM Package Link"><img target="_blank" src="https://img.shields.io/npm/v/%40cfc-servers%2Fwispjs?label=NPM&logo=npm" /></a>
-    <a href="https://docs.wispjs.com" alt="Docs Link"><img target="_blank" src="https://img.shields.io/badge/Docs-docs.wispjs.com-blue?logo=readthedocs" /></a>
+    <a target="_blank" href="https://discord.gg/5JUqZjzmYJ" alt="Discord Invite"><img src="https://img.shields.io/discord/981394195812085770?label=Support&logo=discord&logoColor=white" /></a>
+    <a target="_blank" href="https://www.npmjs.com/package/@cfc-servers/wispjs" alt="NPM Package Link"><img src="https://img.shields.io/npm/v/%40cfc-servers%2Fwispjs?label=NPM&logo=npm" /></a>
+    <a target="_blank" href="https://docs.wispjs.com" alt="Docs Link"><img src="https://img.shields.io/badge/Docs-docs.wispjs.com-blue?logo=readthedocs" /></a>
 </p>
 
 JS Library for interacting with [Wisp](https://wisp.gg/) instances.
