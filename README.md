@@ -1,4 +1,8 @@
 # WispJS
+![Support](https://img.shields.io/discord/981394195812085770)
+![NPM](https://img.shields.io/npm/v/%40cfc-servers%2Fwispjs)
+![Docs](https://img.shields.io/badge/Docs-blue)
+
 JS Library for interacting with [Wisp](https://wisp.gg/) instances.
 
 The entire [Wisp API](https://gamepanel.notion.site/API-Documentation-7b6a2cd53a1047aa9f8c7942ca0c1fe1) is implemented and documented to the best of our abilities.
