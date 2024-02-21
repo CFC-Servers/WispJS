@@ -10,9 +10,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
     steps:
       - uses: actions/checkout@v4
 
@@ -36,8 +33,7 @@ jobs:
       - name: Publish
         uses: JS-DevTools/npm-publish@v3
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          registry: "https://npm.pkg.github.com"
+          token: ${{ secrets.NPM_PUBLISH_TOKEN }}
 
       - name: Configure Git User
         run: |
