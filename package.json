@@ -1,5 +1,5 @@
 {
-  "name": "@cfc-servers/wispjs",
+  "name": "wispjs",
   "version": "2.0.0",
   "type": "module",
   "description": "A package for interacting with Wisp-based server panels",
@@ -14,9 +14,6 @@
   "license": "GPL-3.0",
   "bugs": {
     "url": "https://github.com/CFC-Servers/wispjs/issues"
-  },
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
   },
   "homepage": "https://github.com/CFC-Servers/wispjs#readme",
   "dependencies": {
