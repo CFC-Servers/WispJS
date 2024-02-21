@@ -1,0 +1,62 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_tag:
+        description: "Version tag for the package"
+        required: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Update package version
+        run: |
+          version=${{ inputs.version_tag }}
+          sed -i "s/\"version\": \".*\"/\"version\": \"$version\"/" package.json
+
+      - name: Install packages
+        run: |
+          npm ci
+
+      - name: Build
+        run: |
+          npm run build
+
+      - name: Publish
+        uses: JS-DevTools/npm-publish@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          registry: "https://npm.pkg.github.com"
+
+      - name: Configure Git User
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+
+      - name: Push package version change
+        run: |
+          git add package.json
+          git commit -m "Update package.json version to: ${{ inputs.version_tag }}"
+          git push --force-with-lease origin main
+
+      - name: Generate Docs
+        run: |
+          npm run build-docs
+
+      - name: Publish Docs
+        run: |
+          rm -rf wisp_api wisp_socket .gitignore package-lock.json package.json README.md tsconfig.json wisp.ts wrangler.toml .github
+
+          git add ./docs
+          git commit -m "Update Docs for version: ${{ inputs.version_tag }}"
+          git push --force origin HEAD:docs
