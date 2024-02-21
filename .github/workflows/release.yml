@@ -47,8 +47,9 @@ jobs:
       - name: Push package version change
         run: |
           git add package.json
-          git commit -m "Update package.json version to: ${{ inputs.version_tag }}"
-          git push --force-with-lease origin main || echo "Version tag unchanged"
+          git commit -m "Update package.json version to: ${{ inputs.version_tag }}" && \
+            git push --force-with-lease origin main || \
+            echo "Version tag unchanaged"
 
       - name: Generate Docs
         run: |
