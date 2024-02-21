@@ -36,8 +36,13 @@ npm i @cfc-servers/wispjs
 It depends on what you want to do.
 
 For essentially all use-cases, though, you will need a Wisp API Token.
-To generate one, visit: `https://<your.wisp.domain>/account/security` _(while logged in)_ and generate a new Token.
+To generate one, visit:
+```
+https://<your.wisp.domain>/account/security
+```
+_(while logged in)_ and generate a new Token.
 
+<br>
 
 _(This tool was made for developers, so I assume you're one too!)_
 
