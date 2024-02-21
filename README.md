@@ -72,26 +72,20 @@ import { WispInterface } from "@cfc-servers/wispjs"
 (async () => {
     const wisp = new WispInterface(domain, uuid, token)
 
-    // This is ready to use!
     const api = wisp.api
-
-    // Once you run `.connect()`, you can start using the WebSocket library
-    await wisp.connect()
     const socket = wisp.socket
 })()
 ```
 
 ### Git Pulling / Cloning private repositories
 If you need to interact with private repositories, you'll need to generate a new access token. On GitHub, these are called Personal Access Tokens _(Fine Grained probably works too)_.
-Once you generate one, you just need to pass it to `wisp.connect()`:
+Once you generate one, you just need to pass it to your `WispInterface`:
 ```js
 
 const ghPAT = "<your personal access token>"
 
 (async () => {
-    const wisp = new WispInterface(domain, uuid, token)
-
-    await wisp.connect(ghPAT)
+    const wisp = new WispInterface(domain, uuid, token, ghPAT)
     const socket = wisp.socket
 })()
 ```
@@ -122,7 +116,6 @@ This is a general rundown of the functions you can use.
 Please consult [the docs](https://docs.wispjs.com/) for types, parameters, and everything you'd need to actually use them.
 
 ### WispInterface
- - `connect`
  - `disconnect`
 
 ### WispInterface.api.Allocations

@@ -3,6 +3,8 @@ import { ConsoleMessage, FilesearchResults } from "./pool";
 import { GitPullData, GitPullResult } from "./pool.js";
 import { GitCloneData, GitCloneResult } from "./pool.js";
 
+import type { WispAPI } from "../wisp_api/index.js";
+
 
 /**
  * The Websocket information returned from the API
@@ -21,14 +23,15 @@ export interface WebsocketInfo {
 export type WebsocketDetailsPreprocessor = (info: WebsocketInfo) => void;
 
 
-// FIXME: The `api` field shouldn't be Any
 export interface WispSocket {
     pool: WebsocketPool;
     logger: any;
-    api: any;
+    api: WispAPI;
+    url: string | undefined;
+    token: string | undefined;
     ghToken: string | undefined;
     consoleCallbacks: ((message: string) => void)[];
-    _websocketDetailsPreprocessor: WebsocketDetailsPreprocessor | undefined;
+    detailsPreprocessor: WebsocketDetailsPreprocessor | undefined;
 }
 
 
@@ -65,7 +68,22 @@ export class WispSocket {
      * @public
      */
     setWebsocketDetailsPreprocessor(preprocessor: WebsocketDetailsPreprocessor) {
-        this._websocketDetailsPreprocessor = preprocessor;
+        this.detailsPreprocessor = preprocessor;
+    }
+
+
+    /**
+     * Creates a new Websocket Pool
+     *
+     * @throws Throws an error if the URL or token are not set yet
+     * @internal
+     */
+    createPool() {
+        if (!this.url || !this.token) {
+            throw new Error("Attempted to create a pool without a URL or token")
+        }
+
+        this.pool = new WebsocketPool(this.url, this.token)
     }
 
 
@@ -77,28 +95,18 @@ export class WispSocket {
     async setDetails() {
         try {
             const websocketInfo: WebsocketInfo = await this.api.Servers.GetWebsocketDetails()
-            if (this._websocketDetailsPreprocessor) {
-                this._websocketDetailsPreprocessor(websocketInfo);
+            if (this.detailsPreprocessor) {
+                this.detailsPreprocessor(websocketInfo);
             }
 
-            const url = websocketInfo.url
-            const token = websocketInfo.token
-            this.pool = new WebsocketPool(url, token)
-            this.logger.info(`Got Websocket Details. Pool created.`, url, token)
+            this.url = websocketInfo.url
+            this.token = websocketInfo.token
+
+            this.logger.info("Got Websocket Details.", this.url, this.token)
         } catch(e) {
             this.logger.error(`Failed to get websocket details: ${e}`)
             throw(e)
         }
-    }
-
-
-    /**
-     * Sets the Websocket details and initializes the Websocket connection
-     *
-     * @internal
-     */
-    async connect() {
-        await this.setDetails()
     }
 
 
@@ -108,7 +116,22 @@ export class WispSocket {
      * @internal
      */
     async disconnect() {
-        await this.pool.disconnect()
+        if (this.pool) {
+            await this.pool.disconnect()
+        }
+    }
+
+
+    /**
+     * Verifies that the pool is created and ready to use
+     *
+     * @internal
+     */
+    async verifyPool() {
+        if (!this.pool) {
+            await this.setDetails()
+            this.createPool()
+        }
     }
 
 
@@ -121,6 +144,7 @@ export class WispSocket {
      */
     async filesearch(query: string): Promise<FilesearchResults> {
         this.logger.info("Running filesearch with: ", query)
+        await this.verifyPool()
 
         return await this.pool.run((worker) => {
             const socket = worker.socket
@@ -157,6 +181,8 @@ export class WispSocket {
      * @public
      */
     async gitPull(dir: string, useAuth: boolean = false) {
+        await this.verifyPool()
+
         const pullResult = await this.pool.run((worker) => {
             const socket = worker.socket;
             const logger = worker.logger;
@@ -241,6 +267,8 @@ export class WispSocket {
      * @public
      */
     async gitClone(url: string, dir: string, branch: string) {
+        await this.verifyPool()
+
         return await this.pool.run((worker) => {
             const socket = worker.socket;
             const logger = worker.logger;
@@ -313,28 +341,30 @@ export class WispSocket {
      * @internal
      */
     setupConsoleListener() {
-        this.pool.run((worker) => {
-            const logger = worker.logger;
-            logger.log("Running setupConsoleListener");
+        this.verifyPool().then(() => {
+            this.pool.run((worker) => {
+                const logger = worker.logger;
+                logger.log("Running setupConsoleListener");
 
-            return new Promise<void>((resolve) => {
-                worker.socket.on("console", (data: ConsoleMessage) => {
-                    const line = data.line;
+                return new Promise<void>((resolve) => {
+                    worker.socket.on("console", (data: ConsoleMessage) => {
+                        const line = data.line;
 
-                    if (this.consoleCallbacks.length == 0) {
-                        return resolve();
-                    }
-
-                    this.consoleCallbacks.forEach((callback) => {
-                        try {
-                            callback(line);
-                        } catch(e) {
-                            logger.error("Failed to run console callback", e);
+                        if (this.consoleCallbacks.length == 0) {
+                            return resolve();
                         }
+
+                        this.consoleCallbacks.forEach((callback) => {
+                            try {
+                                callback(line);
+                            } catch(e) {
+                                logger.error("Failed to run console callback", e);
+                            }
+                        });
                     });
                 });
             });
-        });
+        })
     }
 
 
@@ -404,6 +434,8 @@ export class WispSocket {
      * @public
      */
     async sendCommandNonce(nonce: string, command: string, timeout: number = 1000) {
+        await this.verifyPool()
+
         return await this.pool.run((worker) => {
             const socket = worker.socket
             const logger = worker.logger

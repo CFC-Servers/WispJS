@@ -13,11 +13,12 @@ export interface WispInterface {
  * @param domain The Domain of the Pterodactyl/Wisp panel (e.g. `my.gamepanel.gg`)
  * @param uuid The UUID of the server to reference in all API requests
  * @param token The panel API token to use for authorization
+ * @param ghPAT The Github Personal Access Token used for Cloning/Pulling of private repositories. This may be omitted if you do not need to interact with private repositories
  *
  * @public
  */
 export class WispInterface {
-  constructor(domain: string, uuid: string, token: string) {
+  constructor(domain: string, uuid: string, token: string, ghPAT?: string) {
     this.logger = {
       info: (msg: any) => {
         console.log(msg);
@@ -28,25 +29,11 @@ export class WispInterface {
     };
 
     this.api = new WispAPI(domain, uuid, token, this.logger);
-  }
-
-  /**
-   * Establish a Websocket connection with the panel. Required to make Websocket API requests.
-   *
-   * @remarks
-   * ℹ️  `this.socket` is available only after calling this function.
-   *
-   * @param ghPAT The Github Personal Access Token used for Cloning/Pulling of private repositories. This may be omitted if you do not need to interact with private repositories
-   *
-   * @public
-   */
-  async connect(ghPAT?: string) {
     this.socket = new WispSocket(this.logger, this.api, ghPAT);
-    await this.socket.connect();
   }
 
   /**
-   * Manually disconnects from the Websocket connection.
+   * Manually disconnects from the Websocket connection(s)
    *
    * @public
    */
