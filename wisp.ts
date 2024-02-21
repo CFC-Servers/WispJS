@@ -40,7 +40,7 @@ export class WispInterface {
    *
    * @public
    */
-  async connect(ghPAT: string | undefined) {
+  async connect(ghPAT?: string) {
     this.socket = new WispSocket(this.logger, this.api, ghPAT);
     await this.socket.connect();
   }
