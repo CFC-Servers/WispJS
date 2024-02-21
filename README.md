@@ -101,5 +101,129 @@ const ghPAT = "<your personal access token>"
     const socket = wisp.socket
 })()
 ```
-
 If you don't provide this and end up needing it, WispJS will produce an error the next time it gets a Git authentication failure.
+
+### Server-specific functions
+When creating a new WispInterface instance, you give it a Server UUID. All future functions that operate on a specific server will operate on that server.
+
+You can make multiple WispInterface instances to manage multiple servers, or change the server UUID at runtime:
+```js
+(async () => {
+    const wisp = new WispInterface(domain, uuid, token)
+    const api = wisp.api
+
+    // Sends to the the `uuid` server
+    await api.Servers.SendCommand( "some_concmd" )
+
+    // Update the UUId and send to the next server
+    api.core.setUUID( "newUUID" )
+    await api.Servers.SendCommand( "some_concmd" )
+})()
+```
+
+<br>
+
+## API
+This is a general rundown of the functions you can use.
+Please consult the docs for types, parameters, and everything you'd need to actually use them.
+
+### WispInterface
+ - `connect`
+ - `disconnect`
+
+### WispInterface.api.Allocations
+Manage all IP allocations
+ - `List`
+ - `Update`
+
+### WispInterface.api.AuditLogs
+Used to review Audit Logs
+ - `List`
+
+### WispInterface.api.Backups
+Manage Server backups
+ - `List`
+ - `Create`
+ - `ToggleLock`
+ - `Deploy`
+ - `GetDownloadURL`
+ - `Delete`
+
+### WispInterface.api.Databases
+Manage Databases
+ - `List`
+ - `Delete`
+ - `RotatePassword`
+
+### WispInterface.api.FastDL
+Sync FastDL for a Server
+ - `Sync`
+
+### WispInterface.api.Filesystem
+Interact with the Filesystem
+ - `GetDirectoryContents`
+ - `CreateDirectory`
+ - `ReadFile`
+ - `WriteFile`
+ - `CopyFile`
+ - `DeleteFiles`
+ - `GetFileDownloadURL`
+ - `RenameFile`
+ - `CompressFiles`
+ - `DecompressFile`
+
+### WispInterface.api.Mods
+Use the "Mods" feature
+ - `List`
+ - `ToggleInstall`
+
+### WispInterface.api.Schedules
+Manage Schedules
+ - `List`
+ - `GetDetails`
+ - `Create`
+ - `Update`
+ - `Trigger`
+ - `Delete`
+ - `CreateTask`
+ - `UpdateTask`
+ - `DeleteTask`
+
+### WispInterface.api.Servers
+A set of functions to manage a specific server
+ - `SendCommand`
+ - `GetWebsocketDetails`
+ - `SetName`
+ - `GetDetails`
+ - `GetResources`
+ - `PowerRequest`
+
+### WispInterface.api.Startup
+Get and adjust server Startup params _(default map, tickrate, etc.)_
+ - `Get`
+ - `Update`
+
+### WispInterface.api.Subusers
+Create, List, Update, Delete Subusers
+ - `List`
+ - `GetDetails`
+ - `GetAllPermissions`
+ - `Create`
+ - `Update`
+ - `Delete`
+
+### WispInterface.socket
+Interact with the realtime websocket for a Server
+ - `setWebsocketDetailsPreprocessor`
+    - Allows you to modify the reeturned websocket details (i.e. for setting up a proxy)
+ - `filesearch`
+    - Performs the same file search as when you use the "Search" box in the Web File Browser
+ - `gitPull`
+    - Pulls an existing git repo
+ - `gitClone`
+    - Clones a git repo
+ - `addConsoleListener`
+    - Adds a callback that gets called every time a new console message is received from the server
+ - `removeConsoleListener`
+ - `sendCommandNonce`
+    - Sends a command with a "nonce"
