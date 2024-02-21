@@ -9,7 +9,7 @@ JS Library for interacting with [Wisp](https://wisp.gg/) instances.
 
 The entire [Wisp API](https://gamepanel.notion.site/API-Documentation-7b6a2cd53a1047aa9f8c7942ca0c1fe1) is implemented and documented to the best of our abilities.
 
-We also added a lot of documentation _(i.e. response codes, special notes about weird behavior, etc.)_ that is absent from the official docs.
+We also added a lot of documentation _(i.e. response codes, special notes about weird behavior, response types, etc.)_ that is absent from the official docs.
 
 ### Compatability Notes
 - This library is confirmed working for [Physgun](https://physgun.com/)-based instances
@@ -58,7 +58,7 @@ const wisp = new WispInterface(domain, uuid, token)
 ### The HTTP API vs. the WebSocket API
 In Wisp exists both an HTTP API and a WebSocket API. They do different things, but both are needed for full functionality.
 
-In general, the Wisp Socket is used for interacting with a server _intance_. Things like power control, issuing console commands, watching console output, and more.
+In general, the Wisp Socket is used for interacting with a server _intance_. Things like issuing console commands, watching console output, and more.
 
 For almost everything else in the Wisp panel, you use the HTTP API. Databases, subusers, filesystem - it's all through the HTTP API.
 
@@ -103,7 +103,7 @@ You can make multiple WispInterface instances to manage multiple servers, or cha
     // Sends to the the `uuid` server
     await api.Servers.SendCommand( "some_concmd" )
 
-    // Update the UUId and send to the next server
+    // Update the UUID and send to the next server
     api.core.setUUID( "newUUID" )
     await api.Servers.SendCommand( "some_concmd" )
 })()
