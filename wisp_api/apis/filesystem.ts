@@ -129,7 +129,7 @@ export class FilesystemAPI {
   /**
    * Retrieves the contents of the File at the given path
    *
-   * @param path The full path to the File to read
+   * @param path The full path to the File to read (After the /home/container/ part)
    *
    * @throws "Server returned error code: {number}"
    * This error is often thrown if the given path doesn't exist, or is not readable. The error code would be 404.
