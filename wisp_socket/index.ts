@@ -1,116 +1,8 @@
-import { io, Socket } from "socket.io-client";
+import { WebsocketPool } from "./pool.js";
+import { ConsoleMessage, FilesearchResults } from "./pool";
+import { GitPullData, GitPullResult } from "./pool.js";
+import { GitCloneData, GitCloneResult } from "./pool.js";
 
-/**
- * The struct sent from the server containing console messages
- *
- * @param type The type of message. Currently unknown what varients exist
- * @param line The actual content of the console messages
- *
- * @internal
- */
-export type ConsoleMessage = {
-    type: string;
-    line: string;
-}
-
-/**
- * Struct used to initiate a Git Clone action
- *
- * @param dir The directory to clone into
- * @param url The HTTPS URL to clone
- * @param branch The repository branch
- * @param authkey The authentication key to use when pulling
- *
- * @internal
- */
-export type GitCloneData = {
-    dir: string;
-    url: string;
-    branch: string;
-    authkey?: string | undefined;
-}
-
-/**
- * Return struct after finishing a Git Clone action
- *
- * @param isPrivate Whether or not the repository is private
- *
- * @internal
- */
-export type GitCloneResult = {
-    isPrivate: boolean;
-}
-
-/**
- * Struct used to initiate a Git Pull action
- *
- * @param dir The directory to pull
- * @param authkey The authentication key to use when pulling
- *
- * @internal
- */
-export type GitPullData = {
-    dir: string;
-    authkey?: string;
-}
-
-/**
- * Struct returned after a Git Pull action finishes
- *
- * @param output The actual output
- * @param isPrivate Whether or not the repository is private
- *
- * @internal
- */
-export type GitPullResult = {
-    output: string;
-    isPrivate: boolean;
-}
-
-/**
- * An individual filesearch result
- *
- * @param results How many results are present in the file
- * @param lines A map of line numbers to their contents. These lines include nearby context of matched lines
- *
- * @internal
- */
-export type FilesearchFile = {
-    results: number;
-    lines: {[key: string]: string};
-}
-
-/**
- * The results of a file search
- *
- * @param files A map of file names to matched+context lines within each file
- * @param tooMany Whether or not there were too many results to display
- *
- * @internal
- */
-export type FilesearchResults = {
-    files: {[key: string]: FilesearchFile};
-    tooMany: boolean;
-}
-
-export type ServerToClientEvents = {
-    "error": (message: string) => void;
-    "auth_success": (message: string) => void;
-    "filesearch-results": (data: FilesearchResults) => void;
-    "git-error": (data: string) => void;
-    "git-success": (message?: string) => void;
-    "git-clone": (data: GitCloneData) => void;
-    "git-pull": (data: GitPullData) => void;
-    "console": (message: ConsoleMessage) => void;
-}
-
-export type ClientToServerEvents = {
-    "auth": (token: string) => void;
-    "filesearch-start": (query: string) => void;
-    "git-clone": (data: GitCloneData) => void;
-    "git-pull": (data: GitPullData) => void;
-    "send command": (command: string) => void;
-}
 
 /**
  * The Websocket information returned from the API
@@ -120,27 +12,26 @@ export type ClientToServerEvents = {
  *
  * @internal
  */
-export type WebsocketInfo = {
+interface WebsocketInfo {
     token: string;
     url: string;
 }
 
+
 export type WebsocketDetailsPreprocessor = (info: WebsocketInfo) => void;
 
+
+// FIXME: The `api` field shouldn't be Any
 export interface WispSocket {
-    socket: Socket<ServerToClientEvents, ClientToServerEvents>;
+    pool: WebsocketPool;
     logger: any;
     api: any;
-    url: string;
-    token: string;
     ghToken: string;
+    consoleCallbacks: ((message: string) => void)[];
     _websocketDetailsPreprocessor: WebsocketDetailsPreprocessor | undefined;
 }
 
 
-// TODO: Handle errors better
-// TODO: Allow for no ghToken
-// TODO: Don't require a logger
 /**
  * The primary interface to the Websocket API
  *
@@ -148,16 +39,23 @@ export interface WispSocket {
  */
 export class WispSocket {
     constructor(logger: any, api: any, ghToken: string) {
-        this.logger = logger;
-        this.api = api;
-        this.ghToken = ghToken;
-
-        this.url = "";
-        this.token = "";
+        this.logger = logger
+        this.api = api
+        this.ghToken = ghToken
+        this.consoleCallbacks = []
     }
+
 
     /**
      * Sets a callback to run on the Websocket Info before saving the details.
+     *
+     * @example
+     * ```js
+     * // Change the URL of the Websocket
+     * wisp.socket.setWebsocketDetailsPreprocessor((info) => {
+     *    info.url = "wss://newurl.com"
+     * })
+     * ```
      *
      * @remarks
      * ℹ️  This can be used to modify the URL or token after its retrieved from the API
@@ -176,99 +74,23 @@ export class WispSocket {
      *
      * @internal
      */
-    setDetails() {
-        return new Promise<void>((resolve, reject) => {
-            this.api.Servers.GetWebsocketDetails().then((websocketInfo: WebsocketInfo) => {
-                if (this._websocketDetailsPreprocessor) {
-                    this._websocketDetailsPreprocessor(websocketInfo);
-                }
+    async setDetails() {
+        try {
+            const websocketInfo: WebsocketInfo = await this.api.Servers.GetWebsocketDetails()
+            if (this._websocketDetailsPreprocessor) {
+                this._websocketDetailsPreprocessor(websocketInfo);
+            }
 
-                this.url = websocketInfo.url;
-                this.token = websocketInfo.token;
-
-                this.logger.info(`Got Websocket Details`);
-                resolve();
-            }).catch((err: string) => {
-                this.logger.error(`Failed to get websocket details: ${err}`);
-                reject(err);
-            });
-        });
+            const url = websocketInfo.url
+            const token = websocketInfo.token
+            this.pool = new WebsocketPool(url, token)
+            this.logger.info(`Got Websocket Details. Pool created.`, url, token)
+        } catch(e) {
+            this.logger.error(`Failed to get websocket details: ${e}`)
+            throw(e)
+        }
     }
 
-
-    /**
-     * Establishes the actual Websocket connection and initializes the event listeners
-     *
-     * @internal
-     */
-    _connect() {
-        let reconnectDelay = 1;
-
-        return new Promise<void>((resolve, reject) => {
-            let connectedFirst = false;
-            console.log("Connecting to WebSocket");
-
-            this.socket = io(this.url, {
-                forceNew: true,
-                transports: ["websocket"],
-                extraHeaders: {
-                    "Authorization": `Bearer ${this.token}`
-                },
-                addTrailingSlash: true
-            });
-
-            this.socket.on("connect", () => {
-                reconnectDelay = 1;
-                console.log("Connected to WebSocket");
-                this.socket.emit("auth", this.token);
-            });
-
-            this.socket.on("error", (reason: string) => {
-                console.error(`WebSocket error: ${reason}`);
-            });
-
-            this.socket.on("connect_error", (error: Error) => {
-                console.error(`WebSocket Connect error: ${error.toString()}`);
-                if (!connectedFirst) {
-                    connectedFirst = true;
-                    reject();
-                }
-            });
-
-            this.socket.on("disconnect", (reason: string) => {
-                console.error(`Disconnected from WebSocket: ${reason}`);
-
-                if (reason === "io server disconnect") {
-                    console.error(`Server closed connection - retrying (delay: ${reconnectDelay})`);
-
-                    setTimeout(() => {
-                        reconnectDelay = reconnectDelay * 1.2;
-                        this.setDetails().then(() => {
-                            this.socket.connect();
-                        });
-                    }, reconnectDelay * 1000);
-                }
-            });
-
-            this.socket.on("auth_success", () => {
-                console.log("Auth success");
-
-                if (!connectedFirst) {
-                    connectedFirst = true;
-                    resolve();
-                }
-            });
-
-            setTimeout(() => {
-                if (!connectedFirst) {
-                    console.error("Socket didn't connect in time");
-                    reject();
-                }
-            }, 5000);
-
-            console.log("Sent socket.connect()");
-        });
-    }
 
     /**
      * Sets the Websocket details and initializes the Websocket connection
@@ -276,37 +98,17 @@ export class WispSocket {
      * @internal
      */
     async connect() {
-        await this.setDetails();
-        await this._connect();
+        await this.setDetails()
     }
+
 
     /**
      * Disconnects from the websocket
      *
      * @internal
      */
-    disconnect() {
-        return new Promise<void>((resolve, reject) => {
-            let done = false;
-
-            this.socket.once("disconnect", () => {
-                if (!done) {
-                    done = true;
-                    resolve();
-                }
-            });
-
-            this.socket.disconnect();
-
-            setTimeout(() => {
-                if (!done) {
-                    console.error("Socket didn't disconnect in time");
-                    done = true;
-                    reject();
-                }
-            }
-      , 5000);
-        });
+    async disconnect() {
+        await this.pool.disconnect()
     }
 
 
@@ -317,23 +119,33 @@ export class WispSocket {
      *
      * @public
      */
-    filesearch(query: string) {
-        return new Promise<FilesearchResults>((resolve, reject) => {
-            let done = false;
+    async filesearch(query: string): Promise<FilesearchResults> {
+        this.logger.info("Running filesearch with: ", query)
 
-            this.socket.once("filesearch-results", (data) => {
-                done = true;
-                resolve(data);
-            });
+        return await this.pool.run((worker) => {
+            const socket = worker.socket
+            const logger = worker.logger
+            logger.log("Running filesearch:", query)
 
-            this.socket.emit("filesearch-start", query);
+            return new Promise<FilesearchResults>((resolve, reject) => {
+                let done = false
 
-            setTimeout(() => {
-                if (!done) {
-                    reject("Timeout");
-                }
-            }, 10000);
-        });
+                socket.once("filesearch-results", (data) => {
+                    done = true
+                    resolve(data)
+                })
+
+                socket.emit("filesearch-start", query)
+
+                setTimeout(() => {
+                    if (!done) {
+                        socket.off("filesearch-results")
+                        logger.error("Rejected filesearch: 'Timeout'")
+                        reject()
+                    }
+                }, 5000)
+            })
+        })
     }
 
 
@@ -344,64 +156,73 @@ export class WispSocket {
      *
      * @public
      */
-    gitPull(dir: string) {
-        return new Promise<GitPullResult>((resolve, reject) => {
-            let isPrivate = false;
+    async gitPull(dir: string, useAuth: boolean = false) {
+        const pullResult = await this.pool.run((worker) => {
+            const socket = worker.socket;
+            const logger = worker.logger;
+            logger.log("Running gitPull:", dir);
 
-            const finished = (success: boolean, output: string) => {
-                this.socket.removeAllListeners("git-pull");
-                this.socket.removeAllListeners("git-error");
-                this.socket.removeAllListeners("git-success");
+            return new Promise<GitPullResult>((resolve, reject) => {
+                let isPrivate = false
 
-                const result: GitPullResult = {
-                    output: output,
-                    isPrivate: isPrivate
+                const finished = (success: boolean, output: string) => {
+                    socket.removeAllListeners("git-pull")
+                    socket.removeAllListeners("git-error")
+                    socket.removeAllListeners("git-success")
+
+                    const result: GitPullResult = {
+                        output: output,
+                        isPrivate: isPrivate
+                    }
+
+                    if (success) {
+                        resolve(result)
+                    } else {
+                        logger.error("Rejected gitPull:", dir, output);
+                        reject(output)
+                    }
                 }
 
-                if (success) {
-                    resolve(result);
-                } else {
-                    reject(output);
-                }
-            }
+                const sendRequest = (includeAuth: boolean = false) => {
+                    const data: GitPullData = { dir: dir }
 
-            const sendRequest = (includeAuth: boolean = false) => {
-                const data: GitPullData = { dir: dir };
+                    if (includeAuth) {
+                        isPrivate = true
+                        data.authkey = this.ghToken
+                    }
 
-                if (includeAuth) {
-                    isPrivate = true;
-                    data.authkey = this.ghToken;
+                    socket.emit("git-pull", data)
                 }
 
-                this.socket.emit("git-pull", data);
-            }
+                socket.once("git-pull", (data) => {
+                    logger.log(`Updating ${data}`)
+                });
 
-            this.socket.once("git-pull", (data) => {
-                this.logger.info(`Updating ${data}`);
-            });
+                socket.once("git-success", (commit) => {
+                    logger.log(`Addon updated to ${commit}`)
 
-            this.socket.once("git-success", (commit) => {
-                this.logger.info(`Addon updated to ${commit}`);
+                    if (!commit) {
+                        logger.log("No commit given!")
+                    }
 
-                if (!commit) {
-                    this.logger.info("No commit given!");
-                }
+                    finished(true, commit || "")
+                });
 
-                finished(true, commit || "");
-            });
+                socket.on("git-error", (message) => {
+                    if (message === "Remote authentication required but no callback set") {
+                        logger.log(`Remote authentication required, trying again with authkey: ${dir}`)
+                        sendRequest(true)
+                    } else {
+                        logger.log(`Error updating addon: ${message}`)
+                        finished(false, message)
+                    }
+                })
 
-            this.socket.on("git-error", (message) => {
-                if (message === "Remote authentication required but no callback set") {
-                    this.logger.info(`Remote authentication required, trying again with authkey: ${dir}`);
-                    sendRequest(true);
-                } else {
-                    this.logger.error(`Error updating addon: ${message}`);
-                    finished(false, message);
-                }
-            });
+                sendRequest(useAuth)
+            })
+        })
 
-            sendRequest();
-        });
+        return pullResult
     }
 
 
@@ -414,63 +235,99 @@ export class WispSocket {
      *
      * @public
      */
-    gitClone(url: string, dir: string, branch: string) {
-        return new Promise<GitCloneResult>((resolve, reject) => {
-            let isPrivate = false;
+    async gitClone(url: string, dir: string, branch: string) {
+        return await this.pool.run((worker) => {
+            const socket = worker.socket;
+            const logger = worker.logger;
+            logger.log("Running gitClone:", url, dir, branch);
 
-            const finished = (success: boolean, message?: string) => {
-                this.socket.removeAllListeners("git-clone");
-                this.socket.removeAllListeners("git-error");
-                this.socket.removeAllListeners("git-success");
+            return new Promise<GitCloneResult>((resolve, reject) => {
+                let isPrivate = false;
 
-                if (success) {
-                    const result: GitCloneResult = {
-                        isPrivate: isPrivate
+                const finished = (success: boolean, message?: string) => {
+                    socket.removeAllListeners("git-clone");
+                    socket.removeAllListeners("git-error");
+                    socket.removeAllListeners("git-success");
+
+                    if (success) {
+                        const result: GitCloneResult = {
+                            isPrivate: isPrivate
+                        }
+
+                        resolve(result);
+                    } else {
+                        logger.error("Rejected gitClone:", url, dir, branch, message);
+                        reject(message);
+                    }
+                }
+
+                const sendRequest = (includeAuth: boolean = false) => {
+                    const data: GitCloneData = { dir: dir, url: url, branch: branch };
+
+                    if (includeAuth) {
+                        isPrivate = true;
+                        data.authkey = this.ghToken;
                     }
 
-                    resolve(result);
-                } else {
-                    reject(message);
-                }
-            }
-
-            const sendRequest = (includeAuth: boolean = false) => {
-                const data: GitCloneData = { dir: dir, url: url, branch: branch };
-
-                if (includeAuth) {
-                    isPrivate = true;
-                    data.authkey = this.ghToken;
+                    socket.emit("git-clone", data);
                 }
 
-                this.socket.emit("git-clone", data);
-            }
+                socket.once("git-clone", (data) => {
+                    logger.log(`Cloning ${data}`);
+                });
 
-            this.socket.once("git-clone", (data) => {
-                this.logger.info(`Cloning ${data}`);
+                socket.once("git-success", () => {
+                    logger.log("Project successfully cloned");
+                    finished(true);
+                });
+
+                socket.on("git-error", (message) => {
+                    if (message === "Remote authentication required but no callback set") {
+                        logger.log(`Remote authentication required, trying again with authkey: ${dir}`);
+                        sendRequest(true);
+                    } else {
+                        logger.log("Error cloning repo:", url, dir, branch, message);
+                        finished(false, message);
+                    }
+                });
+
+                sendRequest();
             });
-
-            this.socket.once("git-success", () => {
-                this.logger.info("Project successfully cloned");
-                finished(true);
-            });
-
-            this.socket.on("git-error", (message) => {
-                if (message === "Remote authentication required but no callback set") {
-                    this.logger.info(`Remote authentication required, trying again with authkey: ${dir}`);
-                    sendRequest(true);
-                } else {
-                    this.logger.info(`Error cloning repo: ${message}`);
-                    finished(false, message);
-                }
-            });
-
-            sendRequest();
         });
     }
 
 
-    // TODO: Should we maintain or own listener chain?
-    // TODO: Create a way to remove listeners
+    /**
+     * Sets up the console listener worker
+     *
+     * @internal
+     */
+    setupConsoleListener() {
+        this.pool.run((worker) => {
+            const logger = worker.logger;
+            logger.log("Running setupConsoleListener");
+
+            return new Promise<void>((resolve) => {
+                worker.socket.on("console", (data: ConsoleMessage) => {
+                    const line = data.line;
+
+                    if (this.consoleCallbacks.length == 0) {
+                        return resolve();
+                    }
+
+                    this.consoleCallbacks.forEach((callback) => {
+                        try {
+                            callback(line);
+                        } catch(e) {
+                            logger.error("Failed to run console callback", e);
+                        }
+                    });
+                });
+            });
+        });
+    }
+
+
     /**
      * Adds a new callback that will run any time a console message is rececived
      *
@@ -479,9 +336,26 @@ export class WispSocket {
      * @public
      */
     addConsoleListener(callback: (message: string) => void) {
-        this.socket.on("console", (data: ConsoleMessage) => {
-            callback(data.line);
-        });
+        if (this.consoleCallbacks.length == 0) {
+            this.setupConsoleListener();
+        }
+
+        this.consoleCallbacks.push(callback);
+    }
+
+
+    /**
+     * Removes a previously added console message callback
+     *
+     * @param callback The callback function that was previously added
+     *
+     * @public
+     */
+    removeConsoleListener(callback: (message: string) => void) {
+        const index = this.consoleCallbacks.indexOf(callback)
+        if (index == -1) { return }
+
+        this.consoleCallbacks.splice(index, 1)
     }
 
 
@@ -519,37 +393,45 @@ export class WispSocket {
      *
      * @public
      */
-    sendCommandNonce(nonce: string, command: string, timeout: number = 1000) {
-        return new Promise<string>((resolve: Function, reject: Function) => {
-            let timeoutObj: NodeJS.Timeout;
-            let callback: (data: ConsoleMessage) => void;
+    async sendCommandNonce(nonce: string, command: string, timeout: number = 1000) {
+        return await this.pool.run((worker) => {
+            const socket = worker.socket
+            const logger = worker.logger
+            logger.log("Running sendCommandNonce: ", nonce, command)
 
-            let output = "";
+            return new Promise<string>((resolve: Function, reject: Function) => {
+                let timeoutObj: NodeJS.Timeout
+                let callback: (data: ConsoleMessage) => void;
 
-            callback = (data: ConsoleMessage) => {
-                const line = data.line;
-                if (line.startsWith(nonce)) {
-                    const message = line.slice(nonce.length);
+                let output = ""
 
-                    if (message === "Done.") {
-                        this.socket.off("console", callback);
-                        clearTimeout(timeoutObj);
-                        resolve(output);
-                    } else {
-                        output += message;
-                        timeoutObj.refresh();
+                callback = (data: ConsoleMessage) => {
+                    const line = data.line
+                    if (line.startsWith(nonce)) {
+                        const message = line.slice(nonce.length)
+
+                        if (message === "Done.") {
+                            socket.off("console", callback)
+                            clearTimeout(timeoutObj)
+
+                            resolve(output)
+                        } else {
+                            output += message
+                            timeoutObj.refresh()
+                        }
                     }
                 }
-            }
 
-            this.socket.on("console", callback);
-            this.socket.emit("send command", command);
+                socket.on("console", callback)
+                socket.emit("send command", command)
 
-            timeoutObj = setTimeout(() => {
-                console.error("Command timed out current output: ", output);
-                this.socket.off("console", callback);
-                reject("Timeout");
-            }, timeout);
+                timeoutObj = setTimeout(() => {
+                    logger.error(`Command timed out current output: '${output}'`);
+                    socket.off("console", callback);
+                    logger.log("Rejected sendCommandNonce 'Timeout'", nonce, command)
+                    reject("Timeout");
+                }, timeout);
+            });
         });
     }
 }
