@@ -1,9 +1,16 @@
 # WispJS
-JS Library for interacting with Wisp.
-100% of the current [Wisp API](https://gamepanel.notion.site/API-Documentation-7b6a2cd53a1047aa9f8c7942ca0c1fe1) is implemented.
+JS Library for interacting with [Wisp](https://wisp.gg/) instances.
 
-This library is confirmed working for [Physgun](https://physgun.com/)-based servers, and we're looking for help confirming other platforms!
-This may also work for Pterodactyl servers as well, but this hasn't been confirmed yet.
+The entire [Wisp API](https://gamepanel.notion.site/API-Documentation-7b6a2cd53a1047aa9f8c7942ca0c1fe1) is implemented and documented to the best of our abilities.
+
+We also added a lot of documentation _(i.e. response codes, special notes about weird behavior, etc.)_ that is absent from the official docs.
+
+### Compatability Notes
+- This library is confirmed working for [Physgun](https://physgun.com/)-based instances
+- This almost certainly _(but remains unconfirmed)_ works with wisp.gg instances
+- This may also work for Pterodactyl servers, but we haven't been able to confirm this yet
+
+We're always looking for notes about what this does/doesn't work for! Please leave a note in a Discussion or Issue if you learn something
 
 
 ## How do I use this?
@@ -14,7 +21,7 @@ For essentially all use-cases, though, you will need a Wisp API Token.
 To generate one, visit: `https://<your.wisp.domain>/account/security` _(while logged in)_ and generate a new Token.
 
 
-This tool was made for developers, so I assume you're one too!
+_(This tool was made for developers, so I assume you're one too!)_
 
 In general, your WispJS code will start like this:
 ```js
