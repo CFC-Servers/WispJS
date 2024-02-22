@@ -18,6 +18,11 @@ We also added a lot of documentation _(i.e. response codes, special notes about 
 
 We're always looking for notes about what this does/doesn't work for! Please leave a note in a Discussion or Issue if you learn something
 
+## Installation
+```
+npm i @cfc-servers/wispjs@v2
+```
+
 ## What can I do with this?
 Well.. anything!
 
@@ -38,11 +43,6 @@ Here are some ideas:
   - Using the `socket` and `Servers` interfaces, you can issue commands to the server in the same way as typing commands in your server's console on the web interface
   - This is very powerful _(and dangerous, be careful about who has access to these tools!)_
   - CFC uses this to issue admin commands from a discord command, as well as relaying chat messages from Discord -> In-game
-
-## Installation
-```
-npm i @cfc-servers/wispjs@v2
-```
 
 ## Usage
 _(Full docs available at: https://docs.wispjs.com)_
