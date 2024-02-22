@@ -23,6 +23,22 @@ Well.. anything!
 
 Everything you normally do in your Wisp panel is fully replicable using this library.
 
+Here are some ideas:
+- **Automatic GMod addon updater**
+  - Using the `gitClone`/`gitPull`/`filesearch` methods. You can even compare commits to generatea diff with the github api
+  - We use a custom _(public, but not documented)_ GitHub action to automatically update Git addons on all of our servers
+- **Remote log storage/analyzing**
+  - Using the console callbacks on the `socket` interface, you can run a callback any time anything is printed to the console.
+  - At CFC, we use this to send our server logs to Datadog
+  - You could also use this to respond to engine messages that you couldn't see in-game. For example, we used to use this to delete entities that would spam "ignoring unreasonable position" messages. We also used this to detect game exploits and respond to them in ways we couldn't from in-game.
+  - CFC also uses this feature to save full console output to log files _(which isn't otherwise possible on panels like Physgun at the moment)_
+- **Backups**
+  - You can use the `Backups` interface to run a normal backup, or you can use the `Filesystem` interface to manually compress/download specific files of your choosing. This gives you the freedom to make smaller backups and store them anywhere you want - all automatically
+- **Remote Control**
+  - Using the `socket` and `Servers` interfaces, you can issue commands to the server in the same way as typing commands in your server's console on the web interface
+  - This is very powerful _(and dangerous, be careful about who has access to these tools!)_
+  - CFC uses this to issue admin commands from a discord command, as well as relaying chat messages from Discord -> In-game
+
 ## Installation
 ```
 npm i @cfc-servers/wispjs@v2
