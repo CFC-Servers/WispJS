@@ -25,7 +25,7 @@ Everything you normally do in your Wisp panel is fully replicable using this lib
 
 Here are some ideas:
 - **Automatic GMod addon updater**
-  - Using the `gitClone`/`gitPull`/`filesearch` methods. You can even compare commits to generatea diff with the github api
+  - Using the `gitClone`/`gitPull`/`filesearch` methods. You can even compare commits to generate a diff with the github api
   - We use a custom _(public, but not documented)_ GitHub action to automatically update Git addons on all of our servers
 - **Remote log storage/analyzing**
   - Using the console callbacks on the `socket` interface, you can run a callback any time anything is printed to the console.
