@@ -74,7 +74,7 @@ const wisp = new WispInterface(domain, uuid, token)
 ### The HTTP API vs. the WebSocket API
 In Wisp exists both an HTTP API and a WebSocket API. They do different things, but both are needed for full functionality.
 
-In general, the Wisp Socket is used for interacting with a server _intance_. Things like issuing console commands, watching console output, and more.
+In general, the Wisp Socket is used for interacting with a server _instance_. Things like issuing console commands, watching console output, and more.
 
 For almost everything else in the Wisp panel, you use the HTTP API. Databases, subusers, filesystem - it's all through the HTTP API.
 
