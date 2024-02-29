@@ -1,6 +1,6 @@
 {
   "name": "@cfc-servers/wispjs",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "type": "module",
   "description": "A package for interacting with Wisp-based server panels",
   "main": "dist/wisp.js",
