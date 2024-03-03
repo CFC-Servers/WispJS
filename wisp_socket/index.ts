@@ -161,13 +161,14 @@ export class WispSocket {
 
                 socket.emit("filesearch-start", query)
 
+                // This uses a longer timeout because filesearch can take a while
                 setTimeout(() => {
                     if (!done) {
                         socket.off("filesearch-results")
                         logger.error("Rejected filesearch: 'Timeout'")
                         reject()
                     }
-                }, 5000)
+                }, 10000)
             })
         })
     }
