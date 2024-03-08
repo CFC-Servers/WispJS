@@ -1,7 +1,7 @@
 # WispJS
 <p align="left">
     <a href="https://discord.gg/5JUqZjzmYJ" alt="Discord Invite"><img src="https://img.shields.io/discord/981394195812085770?label=Support&logo=discord&logoColor=white" /></a>
-    <a href="https://www.npmjs.com/package/@cfc-servers/wispjs" alt="NPM Package Link"><img src="https://img.shields.io/npm/v/%40cfc-servers%2Fwispjs?label=NPM&logo=npm" /></a>
+    <a href="https://www.npmjs.com/package/wispjs" alt="NPM Package Link"><img src="https://img.shields.io/npm/v/%40cfc-servers%2Fwispjs?label=NPM&logo=npm" /></a>
     <a href="https://docs.wispjs.com" alt="Docs Link"><img src="https://img.shields.io/badge/Docs-docs.wispjs.com-blue?logo=readthedocs" /></a>
 </p>
 
@@ -20,7 +20,7 @@ We're always looking for notes about what this does/doesn't work for! Please lea
 
 ## Installation
 ```
-npm i @cfc-servers/wispjs@v2
+npm i wispjs@v2
 ```
 
 ## What can I do with this?
@@ -58,7 +58,7 @@ _(while logged in)_ and generate a new Token.
 
 In general, your WispJS code will start like this:
 ```js
-import { WispInterface } from "@cfc-servers/wispjs"
+import { WispInterface } from "wispjs"
 
 const domain = "<your.wisp.domain>"
 
@@ -81,7 +81,7 @@ For almost everything else in the Wisp panel, you use the HTTP API. Databases, s
 
 In WispJS, you access each of these as you might expect:
 ```js
-import { WispInterface } from "@cfc-servers/wispjs"
+import { WispInterface } from "wispjs"
 
 ...
 
