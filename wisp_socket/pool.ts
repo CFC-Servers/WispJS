@@ -1,4 +1,4 @@
-import { io, Socket, Manager } from "socket.io-client";
+import { io, Socket } from "socket.io-client";
 
 /**
  * The struct used to define the events that can be sent from the server to the client
@@ -140,13 +140,6 @@ export type WispWebsocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
 
 /**
- * The events that can be sent from the client to the server
- * @internal
- */
-export type WispWebsocketManager = Manager<ServerToClientEvents, ClientToServerEvents>;
-
-
-/**
  * A single worker in the Websocket Pool
  *
  * @internal
@@ -207,6 +200,12 @@ class PoolWorker {
 
         return new Promise<void>((resolve, reject) => {
             let connectedOnce = false
+            const timeout = setTimeout(() => {
+                if (!connectedOnce) {
+                    logger.error("Socket didn't connect in time")
+                    reject("Connection Timeout")
+                }
+            }, 10000)
 
             socket.on("connect", () => {
                 logger.log("Connected to WebSocket")
@@ -223,6 +222,7 @@ class PoolWorker {
 
                 if (!connectedOnce) {
                     connectedOnce = true
+                    clearTimeout(timeout)
                     reject(`Connection error: ${error.toString()}`)
                 }
             })
@@ -237,16 +237,10 @@ class PoolWorker {
                 if (!connectedOnce) {
                     connectedOnce = true
                     this.ready = true
+                    clearTimeout(timeout)
                     resolve()
                 }
             })
-
-            setTimeout(() => {
-                if (!connectedOnce) {
-                    logger.error("Socket didn't connect in time")
-                    reject("Connection Timeout")
-                }
-            }, 10000)
 
             socket.connect()
         });
@@ -256,24 +250,17 @@ class PoolWorker {
         this.ready = false;
 
         return new Promise<void>((resolve, reject) => {
-            let done = false;
+            const timeout = setTimeout(() => {
+                this.logger.error("Socket didn't disconnect in time");
+                reject();
+            }, 5000);
 
             this.socket.once("disconnect", () => {
-                if (!done) {
-                    done = true;
-                    resolve();
-                }
+                clearTimeout(timeout);
+                resolve();
             });
 
             this.socket.disconnect();
-
-            setTimeout(() => {
-                if (!done) {
-                    this.logger.error("Socket didn't disconnect in time");
-                    done = true;
-                    reject();
-                }
-            }, 5000);
         });
     }
 
@@ -298,7 +285,6 @@ class PoolWorker {
  * Struct used to manage a pool of WebSocket workers
  */
 export interface WebsocketPool {
-    manager: WispWebsocketManager;
     workers: PoolWorker[];
     token: string;
     url: string;
@@ -322,12 +308,6 @@ export class WebsocketPool {
         this.maxWorkers = 5
         this.token = token
         this.url = url
-
-        this.manager = new Manager(url, {
-            forceNew: true,
-            transports: ["websocket"],
-            addTrailingSlash: true,
-        });
 
         this.workers = []
         this.queue = []

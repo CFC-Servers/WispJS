@@ -152,23 +152,18 @@ export class WispSocket {
             logger.log("Running filesearch:", query)
 
             return new Promise<FilesearchResults>((resolve, reject) => {
-                let done = false
+                const timeout = setTimeout(() => {
+                    socket.off("filesearch-results")
+                    logger.error("Rejected filesearch: 'Timeout'")
+                    reject()
+                }, 10000)
 
                 socket.once("filesearch-results", (data) => {
-                    done = true
+                    clearTimeout(timeout)
                     resolve(data)
                 })
 
                 socket.emit("filesearch-start", query)
-
-                // This uses a longer timeout because filesearch can take a while
-                setTimeout(() => {
-                    if (!done) {
-                        socket.off("filesearch-results")
-                        logger.error("Rejected filesearch: 'Timeout'")
-                        reject()
-                    }
-                }, 10000)
             })
         })
     }
@@ -443,10 +438,15 @@ export class WispSocket {
             logger.log("Running sendCommandNonce: ", nonce, command)
 
             return new Promise<string>((resolve: Function, reject: Function) => {
-                let timeoutObj: NodeJS.Timeout
+                let output = ""
                 let callback: (data: ConsoleMessage) => void;
 
-                let output = ""
+                const timeoutObj = setTimeout(() => {
+                    logger.error(`Command timed out current output: '${output}'`);
+                    socket.off("console", callback);
+                    logger.log("Rejected sendCommandNonce 'Timeout'", nonce, command)
+                    reject("Timeout");
+                }, timeout);
 
                 callback = (data: ConsoleMessage) => {
                     const line = data.line
@@ -467,13 +467,6 @@ export class WispSocket {
 
                 socket.on("console", callback)
                 socket.emit("send command", command)
-
-                timeoutObj = setTimeout(() => {
-                    logger.error(`Command timed out current output: '${output}'`);
-                    socket.off("console", callback);
-                    logger.log("Rejected sendCommandNonce 'Timeout'", nonce, command)
-                    reject("Timeout");
-                }, timeout);
             });
         });
     }
