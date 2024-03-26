@@ -139,10 +139,11 @@ export class WispSocket {
      * Searches all file contents for the given query
      *
      * @param query The query string to search for
+     * @param timeout How long to wait (in ms) for results before timing out
      *
      * @public
      */
-    async filesearch(query: string): Promise<FilesearchResults> {
+    async filesearch(query: string, timeout: number = 10000): Promise<FilesearchResults> {
         this.logger.info("Running filesearch with: ", query)
         await this.verifyPool()
 
@@ -152,14 +153,14 @@ export class WispSocket {
             logger.log("Running filesearch:", query)
 
             return new Promise<FilesearchResults>((resolve, reject) => {
-                const timeout = setTimeout(() => {
+                const timeoutObj = setTimeout(() => {
                     socket.off("filesearch-results")
                     logger.error("Rejected filesearch: 'Timeout'")
                     reject()
-                }, 10000)
+                }, timeout)
 
                 socket.once("filesearch-results", (data) => {
-                    clearTimeout(timeout)
+                    clearTimeout(timeoutObj)
                     resolve(data)
                 })
 
