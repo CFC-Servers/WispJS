@@ -1,9 +1,9 @@
-import { WebsocketPool } from "./pool.js";
-import { ConsoleMessage, FilesearchResults } from "./pool";
-import { GitPullData, GitPullResult } from "./pool.js";
-import { GitCloneData, GitCloneResult } from "./pool.js";
+import { WebsocketPool } from "./pool.js"
+import { ConsoleMessage, FilesearchResults } from "./pool"
+import { GitPullData, GitPullResult } from "./pool.js"
+import { GitCloneData, GitCloneResult } from "./pool.js"
 
-import type { WispAPI } from "../wisp_api/index.js";
+import type { WispAPI } from "../wisp_api/index.js"
 
 
 /**
@@ -174,21 +174,28 @@ export class WispSocket {
      * Performs a git pull operation on the given directory
      *
      * @param dir The full directory path to perform a pull on
+     * @param timeout In milliseconds, how long to wait before timing out
      *
      * @public
      */
-    async gitPull(dir: string, useAuth: boolean = false) {
+    async gitPull(dir: string, useAuth: boolean = false, timeout: number = 10000) {
         await this.verifyPool()
 
         const pullResult = await this.pool.run((worker) => {
-            const socket = worker.socket;
-            const logger = worker.logger;
-            logger.log("Running gitPull:", dir);
+            const socket = worker.socket
+            const logger = worker.logger
+            logger.log("Running gitPull:", dir)
 
             return new Promise<GitPullResult>((resolve, reject) => {
                 let isPrivate = false
+                let finished: (success: boolean, output: string) => void
 
-                const finished = (success: boolean, output: string) => {
+                const timeoutObj = setTimeout(() => {
+                    logger.error("Rejected gitPull: 'Timeout'")
+                    finished(false, "Timeout")
+                }, timeout)
+
+                finished = (success: boolean, output: string) => {
                     socket.removeAllListeners("git-pull")
                     socket.removeAllListeners("git-error")
                     socket.removeAllListeners("git-success")
@@ -201,9 +208,11 @@ export class WispSocket {
                     if (success) {
                         resolve(result)
                     } else {
-                        logger.error("Rejected gitPull:", dir, output);
+                        logger.error("Rejected gitPull:", dir, output)
                         reject(output)
                     }
+
+                    clearTimeout(timeoutObj)
                 }
 
                 const sendRequest = (includeAuth: boolean = false) => {
@@ -224,7 +233,7 @@ export class WispSocket {
 
                 socket.once("git-pull", (data) => {
                     logger.log(`Updating ${data}`)
-                });
+                })
 
                 socket.once("git-success", (commit) => {
                     logger.log(`Addon updated to ${commit}`)
@@ -234,7 +243,7 @@ export class WispSocket {
                     }
 
                     finished(true, commit || "")
-                });
+                })
 
                 socket.on("git-error", (message) => {
                     if (message === "Remote authentication required but no callback set") {
@@ -260,39 +269,48 @@ export class WispSocket {
      * @param url The HTTPS URL of the repository
      * @param dir The full path of the directory to clone the repository to
      * @param branch The branch of the repository to clone
+     * @param timeout In milliseconds, how long to wait before timing out
      *
      * @public
      */
-    async gitClone(url: string, dir: string, branch: string) {
+    async gitClone(url: string, dir: string, branch: string, timeout: number = 20000) {
         await this.verifyPool()
 
         return await this.pool.run((worker) => {
-            const socket = worker.socket;
-            const logger = worker.logger;
-            logger.log("Running gitClone:", url, dir, branch);
+            const socket = worker.socket
+            const logger = worker.logger
+            logger.log("Running gitClone:", url, dir, branch)
 
             return new Promise<GitCloneResult>((resolve, reject) => {
-                let isPrivate = false;
+                let isPrivate = false
+                let finished: (success: boolean, message?: string) => void
 
-                const finished = (success: boolean, message?: string) => {
-                    socket.removeAllListeners("git-clone");
-                    socket.removeAllListeners("git-error");
-                    socket.removeAllListeners("git-success");
+                const timeoutObj = setTimeout(() => {
+                    logger.error("Rejected gitClone: 'Timeout'")
+                    finished(false, "Timeout")
+                }, timeout)
+
+                finished = (success: boolean, message?: string) => {
+                    socket.removeAllListeners("git-clone")
+                    socket.removeAllListeners("git-error")
+                    socket.removeAllListeners("git-success")
 
                     if (success) {
                         const result: GitCloneResult = {
                             isPrivate: isPrivate
                         }
 
-                        resolve(result);
+                        resolve(result)
                     } else {
-                        logger.error("Rejected gitClone:", url, dir, branch, message);
-                        reject(message);
+                        logger.error("Rejected gitClone:", url, dir, branch, message)
+                        reject(message)
                     }
+
+                    clearTimeout(timeoutObj)
                 }
 
                 const sendRequest = (includeAuth: boolean = false) => {
-                    const data: GitCloneData = { dir: dir, url: url, branch: branch };
+                    const data: GitCloneData = { dir: dir, url: url, branch: branch }
 
                     if (includeAuth) {
                         if (!this.ghToken) {
@@ -300,35 +318,35 @@ export class WispSocket {
                             return finished(false, "Authentication is required, but no GitHub token was set. Can't clone!")
                         }
 
-                        isPrivate = true;
-                        data.authkey = this.ghToken;
+                        isPrivate = true
+                        data.authkey = this.ghToken
                     }
 
-                    socket.emit("git-clone", data);
+                    socket.emit("git-clone", data)
                 }
 
                 socket.once("git-clone", (data) => {
-                    logger.log(`Cloning ${data}`);
-                });
+                    logger.log(`Cloning ${data}`)
+                })
 
                 socket.once("git-success", () => {
-                    logger.log("Project successfully cloned");
-                    finished(true);
-                });
+                    logger.log("Project successfully cloned")
+                    finished(true)
+                })
 
                 socket.on("git-error", (message) => {
                     if (message === "Remote authentication required but no callback set") {
-                        logger.log(`Remote authentication required, trying again with authkey: ${dir}`);
-                        sendRequest(true);
+                        logger.log(`Remote authentication required, trying again with authkey: ${dir}`)
+                        sendRequest(true)
                     } else {
-                        logger.log("Error cloning repo:", url, dir, branch, message);
-                        finished(false, message);
+                        logger.log("Error cloning repo:", url, dir, branch, message)
+                        finished(false, message)
                     }
-                });
+                })
 
-                sendRequest();
-            });
-        });
+                sendRequest()
+            })
+        })
     }
 
 
@@ -340,27 +358,27 @@ export class WispSocket {
     setupConsoleListener() {
         this.verifyPool().then(() => {
             this.pool.run((worker) => {
-                const logger = worker.logger;
-                logger.log("Running setupConsoleListener");
+                const logger = worker.logger
+                logger.log("Running setupConsoleListener")
 
                 return new Promise<void>((resolve) => {
                     worker.socket.on("console", (data: ConsoleMessage) => {
-                        const line = data.line;
+                        const line = data.line
 
                         if (this.consoleCallbacks.length == 0) {
-                            return resolve();
+                            return resolve()
                         }
 
                         this.consoleCallbacks.forEach((callback) => {
                             try {
-                                callback(line);
+                                callback(line)
                             } catch(e) {
-                                logger.error("Failed to run console callback", e);
+                                logger.error("Failed to run console callback", e)
                             }
-                        });
-                    });
-                });
-            });
+                        })
+                    })
+                })
+            })
         })
     }
 
@@ -374,10 +392,10 @@ export class WispSocket {
      */
     addConsoleListener(callback: (message: string) => void) {
         if (this.consoleCallbacks.length == 0) {
-            this.setupConsoleListener();
+            this.setupConsoleListener()
         }
 
-        this.consoleCallbacks.push(callback);
+        this.consoleCallbacks.push(callback)
     }
 
 
@@ -426,7 +444,7 @@ export class WispSocket {
      *
      * @param nonce The short, unique string that your output will be prefixed with
      * @param command The full command string to send
-     * @param timeout How long to wait for output before timing out
+     * @param timeout In milliseconds, how long to wait for output before timing out
      *
      * @public
      */
@@ -440,14 +458,14 @@ export class WispSocket {
 
             return new Promise<string>((resolve: Function, reject: Function) => {
                 let output = ""
-                let callback: (data: ConsoleMessage) => void;
+                let callback: (data: ConsoleMessage) => void
 
                 const timeoutObj = setTimeout(() => {
-                    logger.error(`Command timed out current output: '${output}'`);
-                    socket.off("console", callback);
+                    logger.error(`Command timed out current output: '${output}'`)
+                    socket.off("console", callback)
                     logger.log("Rejected sendCommandNonce 'Timeout'", nonce, command)
-                    reject("Timeout");
-                }, timeout);
+                    reject("Timeout")
+                }, timeout)
 
                 callback = (data: ConsoleMessage) => {
                     const line = data.line
@@ -468,7 +486,7 @@ export class WispSocket {
 
                 socket.on("console", callback)
                 socket.emit("send command", command)
-            });
-        });
+            })
+        })
     }
 }
