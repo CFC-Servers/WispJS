@@ -12,8 +12,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.version_tag }}
 
       - uses: actions/setup-node@v4
         with:
@@ -62,12 +60,15 @@ jobs:
             git push --force-with-lease origin main || \
             echo "Version tag unchanaged"
 
+      - name: Push new tag
+        run: |
+          git tag "${{ inputs.version_tag }}"
+          git push --tags
+
       - name: Publish Docs
         run: |
-          # Delete everything except .git and .
-          shopt -s dotglob
-          rm -rf !( .git | .)
-          shopt -u dotglob
+          # Delete everything except .git
+          find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
 
           # Move the docs back and commit only them
           mv ../docs_wip docs
