@@ -1,5 +1,13 @@
 import { io, Socket } from "socket.io-client";
 
+const WISP_DEBUG = process.env.WISP_DEBUG === "true";
+
+type Logger = {
+    log(...args: any[]): void;
+    error(...args: any[]): void;
+    debug(...args: any[]): void;
+}
+
 /**
  * The struct used to define the events that can be sent from the server to the client
  *
@@ -150,10 +158,8 @@ interface PoolWorker {
     idx: number;
     token: string;
     ready: boolean;
-    logger: {
-        log(...args: any[]): void;
-        error(...args: any[]): void;
-    }
+    done: boolean;
+    logger: Logger;
 }
 
 
@@ -166,11 +172,12 @@ interface PoolWorker {
  */
 class PoolWorker {
     constructor(pool: WebsocketPool) {
-        this.pool = pool;
-        this.ready = false;
+        this.pool = pool
+        this.ready = false
+        this.done = false
 
-        this.idx = pool.workers.length;
-        this.token = pool.token;
+        this.idx = pool.workers.length
+        this.token = pool.token
         this.socket = io(pool.url, {
             forceNew: true,
             transports: ["websocket"],
@@ -182,12 +189,13 @@ class PoolWorker {
         this.logger = {
             log: (...args: any[]) => console.log(logPrefix, args),
             error: (...args: any[]) => console.error(logPrefix, args),
+            debug: (...args: any[]) => {
+                if (!WISP_DEBUG) return;
+                console.debug(logPrefix, args)
+            }
         }
 
-    }
-
-    available() {
-        return this.ready && this.socket.connected;
+        this.connect().then(() => this.processWork()).catch(err => this.logger.error(err))
     }
 
     connect() {
@@ -199,12 +207,9 @@ class PoolWorker {
         logger.log("Connecting to websocket...")
 
         return new Promise<void>((resolve, reject) => {
-            let connectedOnce = false
             const timeout = setTimeout(() => {
-                if (!connectedOnce) {
-                    logger.error("Socket didn't connect in time")
-                    reject("Connection Timeout")
-                }
+                logger.error("Socket didn't connect in time")
+                reject("Connection Timeout")
             }, 10000)
 
             socket.on("connect", () => {
@@ -220,11 +225,9 @@ class PoolWorker {
             socket.on("connect_error", (error: Error) => {
                 logger.error(`WebSocket Connect error: ${error.toString()}`)
 
-                if (!connectedOnce) {
-                    connectedOnce = true
-                    clearTimeout(timeout)
-                    reject(`Connection error: ${error.toString()}`)
-                }
+                this.done = true
+                clearTimeout(timeout)
+                reject(`Connection error: ${error.toString()}`)
             })
 
             socket.on("disconnect", (reason: string) => {
@@ -234,12 +237,9 @@ class PoolWorker {
             socket.on("auth_success", () => {
                 logger.log("Auth success")
 
-                if (!connectedOnce) {
-                    connectedOnce = true
-                    this.ready = true
-                    clearTimeout(timeout)
-                    resolve()
-                }
+                this.ready = true
+                clearTimeout(timeout)
+                resolve()
             })
 
             socket.connect()
@@ -251,31 +251,44 @@ class PoolWorker {
 
         return new Promise<void>((resolve, reject) => {
             const timeout = setTimeout(() => {
-                this.logger.error("Socket didn't disconnect in time");
-                reject();
-            }, 5000);
+                this.logger.error("Socket didn't disconnect in time")
+                reject()
+            }, 5000)
 
             this.socket.once("disconnect", () => {
-                clearTimeout(timeout);
-                resolve();
+                this.done = true
+                clearTimeout(timeout)
+                resolve()
             });
 
-            this.socket.disconnect();
-        });
+            this.socket.disconnect()
+        })
     }
 
-    async run(work: (worker: PoolWorker) => Promise<any>) {
-        this.ready = false;
+    private async processWork() {
+        while (!this.done) {
+            if (!this.ready) {
+                await new Promise(resolve => setTimeout(resolve, 100))
+                continue
+            }
 
-        // TODO: Verify that a finally is what we want here
-        try {
-            return await work(this);
-        } catch (e) {
-            this.logger.error(e);
-            throw e;
-        } finally {
-            this.ready = true;
-            this.pool.processQueue();
+            const work = this.pool.getWork()
+            if (work) {
+                this.ready = false
+
+                try {
+                    this.logger.debug("Running my work")
+                    await work(this)
+                    this.logger.debug("Done with my work, ready for more")
+                } catch (e) {
+                    this.logger.error("Failed to run work")
+                    this.logger.error(e)
+                } finally {
+                    this.ready = true
+                }
+            } else {
+                await new Promise(resolve => setTimeout(resolve, 100))
+            }
         }
     }
 }
@@ -289,6 +302,7 @@ export interface WebsocketPool {
     token: string;
     url: string;
     maxWorkers: number;
+    logger: Logger;
     queue: ((worker: PoolWorker) => Promise<any>)[];
 }
 
@@ -305,48 +319,38 @@ export interface WebsocketPool {
  */
 export class WebsocketPool {
     constructor(url: string, token: string) {
-        this.maxWorkers = 5
+        const envMaxWorkers = process.env.WISP_MAX_WORKERS
+        this.maxWorkers = envMaxWorkers ? parseInt(envMaxWorkers) : 5
         this.token = token
         this.url = url
 
-        this.workers = []
-        this.queue = []
-    }
-
-    async createWorker() {
-        console.log("Creating a new Pool worker")
-        const worker = new PoolWorker(this)
-        this.workers.push(worker)
-        await worker.connect()
-
-        return worker
-    }
-
-    async disconnect() {
-        await Promise.all(this.workers.map((worker: PoolWorker) => worker.disconnect()))
-    }
-
-    async processQueue() {
-        if (this.queue.length == 0) { return }
-
-        const work = this.queue.shift()
-        if (!work) { return }
-
-        let worker: PoolWorker | undefined
-        if (this.workers.length == 0) {
-            worker = await this.createWorker()
-        }
-
-        worker = worker || this.workers.find((worker) => worker.available())
-        if (!worker) {
-            if (this.workers.length < this.maxWorkers) {
-                worker = await this.createWorker()
-            } else {
-                return
+        const logPrefix = "[Pool]"
+        this.logger = {
+            log: (...args: any[]) => console.log(logPrefix, args),
+            error: (...args: any[]) => console.error(logPrefix, args),
+            debug: (...args: any[]) => {
+                if (!WISP_DEBUG) return;
+                console.debug(logPrefix, args);
             }
         }
 
-        return await worker.run(work)
+        this.workers = []
+        this.queue = []
+
+        this.logger.log(`Creating a new Pool with ${this.maxWorkers} workers`)
+        for (let i = 0; i < this.maxWorkers; i++) {
+            this.workers.push(new PoolWorker(this));
+        }
+    }
+
+    public getWork(): ((worker: PoolWorker) => Promise<any>) | undefined {
+        return this.queue.shift();
+    }
+
+    async disconnect() {
+        this.logger.log("Disconnecting all workers...")
+        await Promise.all(this.workers.map((worker: PoolWorker) => worker.disconnect()))
+        this.logger.log("All workers disconnected")
     }
 
     async run(work: (worker: PoolWorker) => Promise<any>): Promise<any> {
@@ -360,8 +364,6 @@ export class WebsocketPool {
                     reject(e)
                 }
             });
-
-            return this.processQueue()
         });
     }
 }
