@@ -22,7 +22,7 @@ jobs:
       - name: Update package version
         run: |
           version=${{ inputs.version_tag }}
-          sed -i "s/\"version\": \".*\"/\"version\": \"$version\"/" package.json
+          npm version $version --no-git-tag-version
 
       - name: Install packages
         run: |
@@ -56,7 +56,6 @@ jobs:
 
       - name: Push package version change
         run: |
-          npm i
           git add package.json
           git add package-lock.json
           git commit -m "Update package.json version to: ${{ inputs.version_tag }}" && \
@@ -65,8 +64,12 @@ jobs:
 
       - name: Publish Docs
         run: |
-          rm -rf ./* ./.*
+          # Delete everything except .git and .
+          shopt -s dotglob
+          rm -rf !( .git | .)
+          shopt -u dotglob
 
+          # Move the docs back and commit only them
           mv ../docs_wip docs
           git add .
           git commit -m "Update Docs for version: ${{ inputs.version_tag }}"
