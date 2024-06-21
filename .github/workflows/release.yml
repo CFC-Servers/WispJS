@@ -54,18 +54,16 @@ jobs:
 
       - name: Push package version change
         run: |
+          npm i
           git add package.json
           git add package-lock.json
           git commit -m "Update package.json version to: ${{ inputs.version_tag }}" && \
             git push --force-with-lease origin main || \
             echo "Version tag unchanaged"
 
-          git tag "${{ inputs.version_tag }}"
-          git push --tags
-
       - name: Publish Docs
         run: |
-          rm -rf ./* ,/.*
+          rm -rf ./* ./.*
 
           mv ../docs_wip docs
           git add .
