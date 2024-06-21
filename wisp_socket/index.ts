@@ -260,10 +260,11 @@ export class WispSocket {
      * @param url The HTTPS URL of the repository
      * @param dir The full path of the directory to clone the repository to
      * @param branch The branch of the repository to clone
+     * @param timeout In milliseconds, how long to wait before timing out
      *
      * @public
      */
-    async gitClone(url: string, dir: string, branch: string) {
+    async gitClone(url: string, dir: string, branch: string, timeout: number = 20000) {
         await this.verifyPool()
 
         return await this.pool.run((worker) => {
@@ -272,9 +273,15 @@ export class WispSocket {
             logger.log("Running gitClone:", url, dir, branch);
 
             return new Promise<GitCloneResult>((resolve, reject) => {
-                let isPrivate = false;
+                let isPrivate = false
+                let finished: (success: boolean, message?: string) => void;
 
-                const finished = (success: boolean, message?: string) => {
+                const timeoutObj = setTimeout(() => {
+                    logger.error("Rejected gitClone: 'Timeout'");
+                    finished(false, "Timeout");
+                }, timeout);
+
+                finished = (success: boolean, message?: string) => {
                     socket.removeAllListeners("git-clone");
                     socket.removeAllListeners("git-error");
                     socket.removeAllListeners("git-success");
@@ -289,6 +296,8 @@ export class WispSocket {
                         logger.error("Rejected gitClone:", url, dir, branch, message);
                         reject(message);
                     }
+
+                    clearTimeout(timeoutObj);
                 }
 
                 const sendRequest = (includeAuth: boolean = false) => {
@@ -426,7 +435,7 @@ export class WispSocket {
      *
      * @param nonce The short, unique string that your output will be prefixed with
      * @param command The full command string to send
-     * @param timeout How long to wait for output before timing out
+     * @param timeout In milliseconds, how long to wait for output before timing out
      *
      * @public
      */
