@@ -20,7 +20,8 @@
   },
   "homepage": "https://github.com/CFC-Servers/WispJS#readme",
   "dependencies": {
-    "socket.io-client": "^4.7.2"
+    "socket.io-client": "^4.7.2",
+    "strip-ansi": "^7.1.0"
   },
   "devDependencies": {
     "@types/node": "^20.5.4",

@@ -1,3 +1,4 @@
+import stripAnsi from 'strip-ansi';
 import { WebsocketPool } from "./pool.js"
 import { ConsoleMessage, FilesearchResults } from "./pool"
 import { GitPullData, GitPullResult } from "./pool.js"
@@ -469,8 +470,10 @@ export class WispSocket {
 
                 callback = (data: ConsoleMessage) => {
                     const line = data.line
-                    if (line.startsWith(nonce)) {
-                        const message = line.slice(nonce.length)
+                    const clean = stripAnsi(line)
+
+                    if (clean.startsWith(nonce)) {
+                        const message = clean.slice(nonce.length)
 
                         if (message === "Done.") {
                             socket.off("console", callback)
