@@ -1,8 +1,8 @@
 import stripAnsi from 'strip-ansi';
 import { WebsocketPool } from "./pool.js"
-import { ConsoleMessage, FilesearchResults } from "./pool"
-import { GitPullData, GitPullResult } from "./pool.js"
-import { GitCloneData, GitCloneResult } from "./pool.js"
+import { FsResult, FsError, FsProgress, SocketWorker } from "./pool.js"
+import { GitSocket } from "./git.js"
+import { FilesystemSocket } from "./filesystem.js"
 
 import type { WispAPI } from "../wisp_api/index.js"
 
@@ -33,6 +33,8 @@ export interface WispSocket {
     ghToken: string | undefined;
     consoleCallbacks: ((message: string) => void)[];
     detailsPreprocessor: WebsocketDetailsPreprocessor | undefined;
+    Git: GitSocket;
+    Filesystem: FilesystemSocket;
 }
 
 
@@ -47,6 +49,9 @@ export class WispSocket {
         this.api = api
         this.ghToken = ghToken
         this.consoleCallbacks = []
+
+        this.Git = new GitSocket(this)
+        this.Filesystem = new FilesystemSocket(this)
     }
 
 
@@ -84,7 +89,18 @@ export class WispSocket {
             throw new Error("Attempted to create a pool without a URL or token")
         }
 
-        this.pool = new WebsocketPool(this.url, this.token)
+        // Provider used by the pool to refresh the (short-lived) token when a
+        // worker needs to reconnect.
+        const refreshDetails = async () => {
+            await this.setDetails()
+            return { url: this.url!, token: this.token! }
+        }
+
+        // The Origin header is the panel the connection originates from, which
+        // is always the API domain.
+        const origin = `https://${this.api.domain}`
+
+        this.pool = new WebsocketPool(this.url, this.token, origin, refreshDetails)
     }
 
 
@@ -103,7 +119,7 @@ export class WispSocket {
             this.url = websocketInfo.url
             this.token = websocketInfo.token
 
-            this.logger.info("Got Websocket Details.", this.url, this.token)
+            this.logger.info(`Got Websocket Details. ${this.url} - ${this.token}`)
         } catch(e) {
             this.logger.error(`Failed to get websocket details: ${e}`)
             throw(e)
@@ -137,215 +153,122 @@ export class WispSocket {
 
 
     /**
-     * Searches all file contents for the given query
+     * Runs a job on an available pool worker, handing it the worker's socket
+     * and logger. Used for event-based flows (e.g. file search) that don't fit
+     * the {@link request} request/response protocol.
      *
-     * @param query The query string to search for
-     * @param timeout How long to wait (in ms) for results before timing out
+     * @param work The job to run; receives the worker and returns a Promise
+     *
+     * @internal
+     */
+    async runWorker<T>(work: (worker: SocketWorker) => Promise<T>): Promise<T> {
+        await this.verifyPool()
+        return await this.pool.run(work)
+    }
+
+
+    /**
+     * Generates a short, unique request id for {@link request} correlation.
+     *
+     * @internal
+     */
+    private generateReqId(): string {
+        return Math.random().toString(36).slice(2, 14)
+    }
+
+
+    /**
+     * Issues a correlated `fs:request` to the backend and awaits its outcome.
+     *
+     * This is the low-level entry point for the git/filesystem protocol. The
+     * client emits `fs:request` with a JSON-string payload (`{ req, op, ...params }`),
+     * and the backend replies with one of three events, all correlated by `req`
+     * and all carrying a JSON-string `args[0]`:
+     *
+     *   - `fs:result`   — success; resolves with the parsed `data`
+     *   - `fs:error`    — failure; rejects with an {@link FsError} (plus collected `output`)
+     *   - `fs:progress` — streaming stdout/stderr/progress lines (collected for error context)
+     *
+     * Typed convenience wrappers live on {@link GitSocket} ({@link WispSocket.Git})
+     * and {@link FilesystemSocket} ({@link WispSocket.Filesystem}); call this
+     * directly for ops that don't have a typed wrapper yet.
+     *
+     * @example
+     * ```js
+     * const status = await wisp.socket.request("git-status", { directory: "/garrysmod/addons/acf-3" })
+     * ```
+     *
+     * @param op The operation name (e.g. `git-pull`, `list`)
+     * @param params Additional payload fields merged into the request (e.g. `{ directory }`)
+     * @param timeout In milliseconds, how long to wait for the result
      *
      * @public
      */
-    async filesearch(query: string, timeout: number = 10000): Promise<FilesearchResults> {
-        this.logger.info("Running filesearch with: ", query)
+    async request<T = any>(op: string, params: Record<string, any> = {}, timeout: number = 10000): Promise<T> {
         await this.verifyPool()
 
         return await this.pool.run((worker) => {
             const socket = worker.socket
             const logger = worker.logger
-            logger.log("Running filesearch:", query)
+            const req = this.generateReqId()
+            logger.log(`Running fsRequest: ${op}`, params)
 
-            return new Promise<FilesearchResults>((resolve, reject) => {
-                const timeoutObj = setTimeout(() => {
-                    socket.off("filesearch-results")
-                    logger.error("Rejected filesearch: 'Timeout'")
-                    reject()
-                }, timeout)
+            return new Promise<T>((resolve, reject) => {
+                const progress: string[] = []
 
-                socket.once("filesearch-results", (data) => {
-                    clearTimeout(timeoutObj)
-                    resolve(data)
-                })
+                let resultHandler: (raw: string) => void
+                let errorHandler: (raw: string) => void
+                let progressHandler: (raw: string) => void
 
-                socket.emit("filesearch-start", query)
-            })
-        })
-    }
-
-
-    /**
-     * Performs a git pull operation on the given directory
-     *
-     * @param dir The full directory path to perform a pull on
-     * @param timeout In milliseconds, how long to wait before timing out
-     *
-     * @public
-     */
-    async gitPull(dir: string, useAuth: boolean = false, timeout: number = 10000) {
-        await this.verifyPool()
-
-        const pullResult = await this.pool.run((worker) => {
-            const socket = worker.socket
-            const logger = worker.logger
-            logger.log("Running gitPull:", dir)
-
-            return new Promise<GitPullResult>((resolve, reject) => {
-                let isPrivate = false
-                let finished: (success: boolean, output: string) => void
-
-                const timeoutObj = setTimeout(() => {
-                    logger.error("Rejected gitPull: 'Timeout'")
-                    finished(false, "Timeout")
-                }, timeout)
-
-                finished = (success: boolean, output: string) => {
-                    socket.removeAllListeners("git-pull")
-                    socket.removeAllListeners("git-error")
-                    socket.removeAllListeners("git-success")
-
-                    const result: GitPullResult = {
-                        output: output,
-                        isPrivate: isPrivate
+                const parse = <P>(raw: string): P | undefined => {
+                    try {
+                        return JSON.parse(raw) as P
+                    } catch {
+                        logger.error(`Failed to parse fs event for ${op}`, raw)
+                        return undefined
                     }
+                }
 
-                    if (success) {
-                        resolve(result)
-                    } else {
-                        logger.error("Rejected gitPull:", dir, output)
-                        reject(output)
-                    }
-
+                const cleanup = () => {
+                    socket.off("fs:result", resultHandler)
+                    socket.off("fs:error", errorHandler)
+                    socket.off("fs:progress", progressHandler)
                     clearTimeout(timeoutObj)
                 }
 
-                const sendRequest = (includeAuth: boolean = false) => {
-                    const data: GitPullData = { dir: dir }
-
-                    if (includeAuth) {
-                        if (!this.ghToken) {
-                            logger.error("No GitHub token set, can't authenticate")
-                            return finished(false, "Authentication is required, but no GitHub token was set. Can't pull!")
-                        }
-
-                        isPrivate = true
-                        data.authkey = this.ghToken
-                    }
-
-                    socket.emit("git-pull", data)
-                }
-
-                socket.once("git-pull", (data) => {
-                    logger.log(`Updating ${data}`)
-                })
-
-                socket.once("git-success", (commit) => {
-                    logger.log(`Addon updated to ${commit}`)
-
-                    if (!commit) {
-                        logger.log("No commit given!")
-                    }
-
-                    finished(true, commit || "")
-                })
-
-                socket.on("git-error", (message) => {
-                    if (message === "Remote authentication required but no callback set") {
-                        logger.log(`Remote authentication required, trying again with authkey: ${dir}`)
-                        sendRequest(true)
-                    } else {
-                        logger.log(`Error updating addon: ${message}`)
-                        finished(false, message)
-                    }
-                })
-
-                sendRequest(useAuth)
-            })
-        })
-
-        return pullResult
-    }
-
-
-    /**
-     * Clones a new Repo to the given directory
-     *
-     * @param url The HTTPS URL of the repository
-     * @param dir The full path of the directory to clone the repository to
-     * @param branch The branch of the repository to clone
-     * @param timeout In milliseconds, how long to wait before timing out
-     *
-     * @public
-     */
-    async gitClone(url: string, dir: string, branch: string, timeout: number = 20000) {
-        await this.verifyPool()
-
-        return await this.pool.run((worker) => {
-            const socket = worker.socket
-            const logger = worker.logger
-            logger.log("Running gitClone:", url, dir, branch)
-
-            return new Promise<GitCloneResult>((resolve, reject) => {
-                let isPrivate = false
-                let finished: (success: boolean, message?: string) => void
-
                 const timeoutObj = setTimeout(() => {
-                    logger.error("Rejected gitClone: 'Timeout'")
-                    finished(false, "Timeout")
+                    cleanup()
+                    logger.error(`fsRequest timed out: ${op} (${req})`)
+                    reject(new Error(`fsRequest timed out: ${op}`))
                 }, timeout)
 
-                finished = (success: boolean, message?: string) => {
-                    socket.removeAllListeners("git-clone")
-                    socket.removeAllListeners("git-error")
-                    socket.removeAllListeners("git-success")
-
-                    if (success) {
-                        const result: GitCloneResult = {
-                            isPrivate: isPrivate
-                        }
-
-                        resolve(result)
-                    } else {
-                        logger.error("Rejected gitClone:", url, dir, branch, message)
-                        reject(message)
-                    }
-
-                    clearTimeout(timeoutObj)
+                progressHandler = (raw: string) => {
+                    const p = parse<FsProgress>(raw)
+                    if (!p || p.req !== req) return
+                    const line = p.line ?? ""
+                    progress.push(line)
+                    logger.debug(`[${op}] ${p.kind}: ${line}`)
                 }
 
-                const sendRequest = (includeAuth: boolean = false) => {
-                    const data: GitCloneData = { dir: dir, url: url, branch: branch }
-
-                    if (includeAuth) {
-                        if (!this.ghToken) {
-                            logger.error("No GitHub token set, can't authenticate")
-                            return finished(false, "Authentication is required, but no GitHub token was set. Can't clone!")
-                        }
-
-                        isPrivate = true
-                        data.authkey = this.ghToken
-                    }
-
-                    socket.emit("git-clone", data)
+                resultHandler = (raw: string) => {
+                    const p = parse<FsResult<T>>(raw)
+                    if (!p || p.req !== req) return
+                    cleanup()
+                    resolve(p.data as T)
                 }
 
-                socket.once("git-clone", (data) => {
-                    logger.log(`Cloning ${data}`)
-                })
+                errorHandler = (raw: string) => {
+                    const p = parse<FsError>(raw)
+                    if (!p || p.req !== req) return
+                    cleanup()
+                    logger.error(`fsRequest error: ${op} - ${p.code}: ${p.message}`)
+                    reject({ ...p, output: progress.join("\n") })
+                }
 
-                socket.once("git-success", () => {
-                    logger.log("Project successfully cloned")
-                    finished(true)
-                })
-
-                socket.on("git-error", (message) => {
-                    if (message === "Remote authentication required but no callback set") {
-                        logger.log(`Remote authentication required, trying again with authkey: ${dir}`)
-                        sendRequest(true)
-                    } else {
-                        logger.log("Error cloning repo:", url, dir, branch, message)
-                        finished(false, message)
-                    }
-                })
-
-                sendRequest()
+                socket.on("fs:result", resultHandler)
+                socket.on("fs:error", errorHandler)
+                socket.on("fs:progress", progressHandler)
+                socket.emit("fs:request", JSON.stringify({ req, op, ...params }))
             })
         })
     }
@@ -363,9 +286,7 @@ export class WispSocket {
                 logger.log("Running setupConsoleListener")
 
                 return new Promise<void>((resolve) => {
-                    worker.socket.on("console", (data: ConsoleMessage) => {
-                        const line = data.line
-
+                    worker.socket.on("console output", (line: string) => {
                         if (this.consoleCallbacks.length == 0) {
                             return resolve()
                         }
@@ -459,24 +380,23 @@ export class WispSocket {
 
             return new Promise<string>((resolve: Function, reject: Function) => {
                 let output = ""
-                let callback: (data: ConsoleMessage) => void
+                let callback: (line: string) => void
 
                 const timeoutObj = setTimeout(() => {
                     logger.error(`Command timed out current output: '${output}'`)
-                    socket.off("console", callback)
+                    socket.off("console output", callback)
                     logger.log("Rejected sendCommandNonce 'Timeout'", nonce, command)
                     reject("Timeout")
                 }, timeout)
 
-                callback = (data: ConsoleMessage) => {
-                    const line = data.line
+                callback = (line: string) => {
                     const clean = stripAnsi(line)
 
                     if (clean.startsWith(nonce)) {
                         const message = clean.slice(nonce.length)
 
                         if (message === "Done.") {
-                            socket.off("console", callback)
+                            socket.off("console output", callback)
                             clearTimeout(timeoutObj)
 
                             resolve(output)
@@ -487,7 +407,7 @@ export class WispSocket {
                     }
                 }
 
-                socket.on("console", callback)
+                socket.on("console output", callback)
                 socket.emit("send command", command)
             })
         })

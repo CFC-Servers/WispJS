@@ -54,4 +54,13 @@ export class WispAPI {
     this.Startup = new StartupAPI(this.core);
     this.Subusers = new SubusersAPI(this.core);
   }
+
+  /**
+   * The panel domain these API calls target.
+   *
+   * @public
+   */
+  get domain(): string {
+    return this.core.domain;
+  }
 }

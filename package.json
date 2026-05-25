@@ -7,7 +7,7 @@
   "types": "dist/wisp.d.ts",
   "scripts": {
     "build": "tsc",
-    "build-docs": "typedoc wisp.ts wisp_api/index.ts wisp_socket/index.ts wisp_api/apis/*"
+    "build-docs": "typedoc wisp.ts wisp_api/index.ts wisp_socket/index.ts wisp_socket/git.ts wisp_socket/filesystem.ts wisp_api/apis/*"
   },
   "repository": {
     "type": "git",
@@ -20,11 +20,12 @@
   },
   "homepage": "https://github.com/CFC-Servers/WispJS#readme",
   "dependencies": {
-    "socket.io-client": "^4.7.2",
-    "strip-ansi": "^7.1.0"
+    "strip-ansi": "^7.1.0",
+    "ws": "^8.21.0"
   },
   "devDependencies": {
     "@types/node": "^20.5.4",
+    "@types/ws": "^8.18.1",
     "typedoc": "^0.25.4",
     "typescript": "^5.3.3"
   }
