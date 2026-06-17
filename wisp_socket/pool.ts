@@ -2,6 +2,12 @@ import { WispWebSocket } from "./ws_adapter.js";
 
 const WISP_DEBUG = process.env.WISP_DEBUG === "true";
 
+const REAUTH_INTERVAL = (() => {
+    const parsed = process.env.WISP_REAUTH_INTERVAL ? parseInt(process.env.WISP_REAUTH_INTERVAL) : NaN
+    return Number.isFinite(parsed) ? parsed : 9 * 60 * 1000
+})();
+const REAUTH_TIMEOUT = 10000;
+
 export type Logger = {
     log(...args: any[]): void;
     error(...args: any[]): void;
@@ -297,6 +303,7 @@ class PoolWorker {
     private intentionalDisconnect = false;
     private reconnectAttempts = 0;
     private readonly maxReconnectAttempts = 3;
+    private reauthTimer?: ReturnType<typeof setTimeout>;
 
     constructor(pool: WebsocketPool) {
         this.pool = pool
@@ -378,6 +385,7 @@ class PoolWorker {
                 this.reconnectAttempts = 0
                 this.connected = true
                 clearTimeout(timeout)
+                this.scheduleReauth()
                 resolve()
             })
 
@@ -385,11 +393,57 @@ class PoolWorker {
         });
     }
 
+    // Resets the re-auth clock. Runs on every successful auth.
+    private scheduleReauth() {
+        clearTimeout(this.reauthTimer)
+        this.reauthTimer = setTimeout(() => this.reauth(), REAUTH_INTERVAL)
+    }
+
+    // Re-auths the live socket with a fresh token. A failed re-auth is treated
+    // as a dead connection and handed to the reconnect path.
+    private async reauth() {
+        if (!this.connected || this.intentionalDisconnect || this.done) { return }
+
+        if (this.pool.refreshDetails) {
+            try {
+                const details = await this.pool.refreshDetails()
+                this.url = details.url
+                this.token = details.token
+            } catch (e) {
+                this.logger.error("Re-auth: failed to refresh details", e)
+                return this.handleDisconnect("reauth refresh failure")
+            }
+        }
+
+        const socket = this.socket
+        const ok = await new Promise<boolean>((resolve) => {
+            const onSuccess = () => {
+                clearTimeout(timeout)
+                resolve(true)
+            }
+            const timeout = setTimeout(() => {
+                socket.off("auth success", onSuccess)
+                resolve(false)
+            }, REAUTH_TIMEOUT)
+
+            socket.once("auth success", onSuccess)
+            socket.emit("auth", this.token)
+        })
+
+        if (!ok) {
+            this.logger.error("Re-auth: no auth success in time")
+            return this.handleDisconnect("reauth failure")
+        }
+
+        this.scheduleReauth()
+    }
+
     // Recovers from an unexpected disconnect by reconnecting with a freshly
     // fetched token (the JWT is short-lived). After maxReconnectAttempts the
     // worker is marked dead so the pool stops handing it work.
     private async handleDisconnect(reason: string) {
         this.connected = false
+        clearTimeout(this.reauthTimer)
 
         if (this.intentionalDisconnect || this.done) { return }
 
@@ -423,6 +477,7 @@ class PoolWorker {
     disconnect() {
         this.intentionalDisconnect = true
         this.connected = false
+        clearTimeout(this.reauthTimer)
 
         return new Promise<void>((resolve) => {
             const timeout = setTimeout(() => {
