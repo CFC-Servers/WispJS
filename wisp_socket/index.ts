@@ -286,8 +286,14 @@ export class WispSocket {
                 logger.log("Running setupConsoleListener")
 
                 return new Promise<void>((resolve) => {
-                    worker.socket.on("console output", (line: string) => {
+                    const cleanup = () => {
+                        worker.socket.off("console output", handleLine)
+                        worker.socket.off("disconnect", handleDisconnect)
+                    }
+
+                    const handleLine = (line: string) => {
                         if (this.consoleCallbacks.length == 0) {
+                            cleanup()
                             return resolve()
                         }
 
@@ -298,7 +304,18 @@ export class WispSocket {
                                 logger.error("Failed to run console callback", e)
                             }
                         })
-                    })
+                    }
+
+                    const handleDisconnect = () => {
+                        cleanup()
+                        resolve()
+                        if (this.consoleCallbacks.length > 0) {
+                            this.setupConsoleListener()
+                        }
+                    }
+
+                    worker.socket.on("console output", handleLine)
+                    worker.socket.once("disconnect", handleDisconnect)
                 })
             })
         })
